@@ -1,5 +1,5 @@
 import { type Editor, type TLShape } from 'tldraw'
-import type { BezierPoint } from '../../../components/shapes/BezierShape'
+import type { BezierPoint } from '../../../lib/shapes/bezier/BezierShapeUtil'
 
 /**
  * Utility for converting shapes to bezier paths

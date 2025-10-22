@@ -1,5 +1,5 @@
-import type { BezierPoint } from '../BezierShape'
-import { BezierBounds } from '../services/BezierBounds'
+import type { BezierPoint } from '../BezierShapeUtil'
+import { BezierBounds } from './bezierBounds'
 
 /**
  * Convert a single segment to SVG path data for highlighting / selection visuals.

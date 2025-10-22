@@ -6,14 +6,14 @@ import {
   Vec,
   type TLShapePartial,
 } from '@tldraw/editor'
-import { type BezierShape, type BezierPoint } from '../../BezierShape'
+import { type BezierShape, type BezierPoint } from '../BezierShapeUtil'
 import {
   BEZIER_THRESHOLDS,
   BEZIER_HANDLES,
   BEZIER_TIMING,
   BEZIER_BOUNDS
-} from '../../utils/bezierConstants'
-import { DEFAULT_SHAPE_PROPS } from '../../constants/defaultShapeProps'
+} from '../shared/bezierConstants'
+import { DEFAULT_SHAPE_PROPS } from '../shared/defaultShapeProps'
 import { useTransientShapeStore } from '../../../../store/transientShapeStore'
 
 interface DragHandleOptions {
@@ -68,7 +68,7 @@ function computeDragHandles({
   }
 }
 
-export class BezierCreating extends StateNode {
+export class Creating extends StateNode {
   static override id = 'creating'
 
   info = {} as TLPointerEventInfo
@@ -103,7 +103,7 @@ export class BezierCreating extends StateNode {
       // Create history mark for extending shape
       this.markId = this.editor.markHistoryStoppingPoint(`extending_bezier:${extendingShapeId}`)
 
-      const existingShape = this.editor.getShape(extendingShapeId as import('tldraw').TLShapeId) as BezierShape | undefined
+      const existingShape = this.editor.getShape(extendingShapeId as import('@tldraw/editor').TLShapeId) as BezierShape | undefined
       if (existingShape && existingShape.type === 'bezier') {
         // We're extending an existing shape
         this.isExtendingShape = true

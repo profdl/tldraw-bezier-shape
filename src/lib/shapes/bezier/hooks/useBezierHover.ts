@@ -1,9 +1,9 @@
 import { useEffect, useCallback } from 'react'
-import { type Editor } from 'tldraw'
-import { type BezierShape, type BezierPoint } from '../BezierShape'
-import { BezierMath } from '../services/BezierMath'
-import { BezierState } from '../services/BezierState'
-import { BEZIER_THRESHOLDS } from '../utils/bezierConstants'
+import { type Editor } from '@tldraw/editor'
+import { type BezierShape, type BezierPoint } from '../BezierShapeUtil'
+import { BezierMath } from '../shared/bezierMath'
+import { BezierState } from '../shared/bezierState'
+import { BEZIER_THRESHOLDS } from '../shared/bezierConstants'
 
 interface HoverPreviewPoint {
   x: number

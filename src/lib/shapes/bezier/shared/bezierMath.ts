@@ -1,6 +1,6 @@
 import { Bezier } from 'bezier-js'
-import { type BezierPoint } from '../BezierShape'
-import { BEZIER_HANDLES } from '../utils/bezierConstants'
+import { type BezierPoint } from '../BezierShapeUtil'
+import { BEZIER_HANDLES } from './bezierConstants'
 
 /**
  * Enhanced Bezier mathematics service leveraging the bezier-js library.

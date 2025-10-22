@@ -1,5 +1,5 @@
 import React from 'react'
-import { BEZIER_STYLES, BEZIER_THRESHOLDS } from '../utils/bezierConstants'
+import { BEZIER_STYLES, BEZIER_THRESHOLDS } from '../shared/bezierConstants'
 
 interface HoverPreviewPoint {
   x: number

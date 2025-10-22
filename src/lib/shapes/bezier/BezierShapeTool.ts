@@ -1,19 +1,19 @@
 import { StateNode, type TLStateNodeConstructor } from '@tldraw/editor'
-import { BezierIdle } from './states/BezierIdle'
-import { BezierCreating } from './states/BezierCreating'
-import { BezierEditing } from './states/BezierEditing'
+import { Idle } from './toolStates/Idle'
+import { Creating } from './toolStates/Creating'
+import { Editing } from './toolStates/Editing'
 
 /**
  * Tool for creating and editing bezier path shapes.
  *
  * @public
  */
-export class BezierTool extends StateNode {
+export class BezierShapeTool extends StateNode {
   static override id = 'bezier'
   static override initial = 'idle'
   static override isLockable = false
   static override children(): TLStateNodeConstructor[] {
-    return [BezierIdle, BezierCreating, BezierEditing]
+    return [Idle, Creating, Editing]
   }
 
   override shapeType = 'bezier'

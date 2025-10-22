@@ -8,7 +8,7 @@ import {
   type TLHandle,
   type TLResizeInfo,
   type TLShapePartial,
-} from 'tldraw'
+} from '@tldraw/editor'
 import {
   type TLDefaultColorStyle,
   type TLDefaultDashStyle,
@@ -19,22 +19,22 @@ import {
   DefaultSizeStyle,
   DefaultFillStyle,
 } from '@tldraw/tlschema'
-import { FlippableShapeUtil } from './utils/FlippableShapeUtil'
-import { BezierBounds } from './services/BezierBounds'
-import { BezierState, BezierStateActions } from './services/BezierState'
+import { FlippableShapeUtil } from './shared/FlippableShapeUtil'
+import { BezierBounds } from './shared/bezierBounds'
+import { BezierState, BezierStateActions } from './shared/bezierState'
 import {
   generateBezierHandles,
   createHandleMemoKey
-} from './utils/bezierUtils'
-import { BEZIER_STYLES, bezierLog, STROKE_SIZES } from './utils/bezierConstants'
+} from './shared/bezierUtils'
+import { BEZIER_STYLES, bezierLog, STROKE_SIZES } from './shared/bezierConstants'
 import { BezierShapeSvg } from './components/BezierShapeSvg'
 import { BezierControlPoints } from './components/BezierControlPoints'
 import { BezierHoverPreview } from './components/BezierHoverPreview'
-import { LRUCache } from '../../utils/LRUCache'
-import { debugLog } from '../../utils/debug'
-import { bezierSegmentToPath } from './utils/bezierPathHelpers'
-import { getPathForBezierShape } from './utils/bezierPathBuilder'
-import { getFillDefForExport, getFillDefForCanvas } from './utils/fillDefs'
+import { LRUCache } from '../../../utils/LRUCache'
+import { debugLog } from '../../../utils/debug'
+import { bezierSegmentToPath } from './shared/bezierPathHelpers'
+import { getPathForBezierShape } from './shared/bezierPathBuilder'
+import { getFillDefForExport, getFillDefForCanvas } from './shared/fillDefs'
 
 /**
  * A point on a bezier curve with optional control points.

@@ -1,8 +1,8 @@
-import { type Editor, type TLHandle } from 'tldraw'
-import { type BezierPoint, type BezierShape } from '../BezierShape'
-import { BezierMath } from './BezierMath'
-import { BEZIER_THRESHOLDS, bezierLog } from '../utils/bezierConstants'
-import { parseHandleId } from '../utils/bezierHandleUtils'
+import { type Editor, type TLHandle } from '@tldraw/editor'
+import { type BezierPoint, type BezierShape } from '../BezierShapeUtil'
+import { BezierMath } from './bezierMath'
+import { BEZIER_THRESHOLDS, bezierLog } from './bezierConstants'
+import { parseHandleId } from './bezierHandleUtils'
 
 /**
  * State management service for Bezier shape editing operations.

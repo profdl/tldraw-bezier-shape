@@ -1,6 +1,6 @@
 import { WeakCache } from '@tldraw/editor'
 import { PathBuilder } from 'tldraw'
-import type { BezierPoint, BezierShape } from '../BezierShape'
+import type { BezierPoint, BezierShape } from '../BezierShapeUtil'
 
 /**
  * Converts an array of BezierPoints to a PathBuilder instance.

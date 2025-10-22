@@ -1,8 +1,8 @@
-import { type Editor, type TLBaseShape, type TLShape, type TLShapePartial } from 'tldraw'
+import { type Editor, type TLBaseShape, type TLShape, type TLShapePartial } from '@tldraw/editor'
 import type { JsonObject, JsonValue } from '@tldraw/utils'
-import { GeometryConverter } from '../../../store/modifiers/utils/GeometryConverter'
-import type { BezierPoint, BezierShape } from '../BezierShape'
-import { BezierStateActions } from '../services/BezierState'
+import { GeometryConverter } from '../../../../store/modifiers/utils/GeometryConverter'
+import type { BezierPoint, BezierShape } from '../BezierShapeUtil'
+import { BezierStateActions } from './bezierState'
 
 interface ConversionOptions {
   /**

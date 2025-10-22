@@ -1,13 +1,13 @@
 import { getColorValue, useEditor, useValue } from '@tldraw/editor'
 import type { PathBuilder } from 'tldraw'
-import type { BezierShape } from '../BezierShape'
-import { useDefaultColorTheme } from '../../../hooks/useDefaultColorTheme'
-import { getPathForBezierShape, getPathForHoleRings } from '../utils/bezierPathBuilder'
-import { STROKE_SIZES } from '../utils/bezierConstants'
+import type { BezierShape } from '../BezierShapeUtil'
+import { useDefaultColorTheme } from '../../../../hooks/useDefaultColorTheme'
+import { getPathForBezierShape, getPathForHoleRings } from '../shared/bezierPathBuilder'
+import { STROKE_SIZES } from '../shared/bezierConstants'
 
 // Import ShapeFill component from tldraw's internal modules
 // This component handles pattern fills and other fill styles
-import { ShapeFill } from '../utils/ShapeFill'
+import { ShapeFill } from '../shared/ShapeFill'
 
 /**
  * Props for the BezierShapeSvg component.

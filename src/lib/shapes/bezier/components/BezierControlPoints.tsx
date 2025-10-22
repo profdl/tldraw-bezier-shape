@@ -1,6 +1,6 @@
 import React from 'react'
-import { type BezierPoint } from '../BezierShape'
-import { BEZIER_STYLES, BEZIER_THRESHOLDS } from '../utils/bezierConstants'
+import { type BezierPoint } from '../BezierShapeUtil'
+import { BEZIER_STYLES, BEZIER_THRESHOLDS } from '../shared/bezierConstants'
 
 interface BezierControlPointsProps {
   points: BezierPoint[]

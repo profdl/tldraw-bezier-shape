@@ -1,9 +1,9 @@
-import { type Editor, type TLShapeId } from 'tldraw'
-import { type BezierPoint, type BezierShape } from '../BezierShape'
-import { BezierState, BezierStateActions } from './BezierState'
-import { BezierBounds } from './BezierBounds'
-import { BezierInteractionDetector, type InteractionContext } from './BezierInteractionDetector'
-import { bezierLog, BEZIER_TIMING, BEZIER_THRESHOLDS } from '../utils/bezierConstants'
+import { type Editor, type TLShapeId } from '@tldraw/editor'
+import { type BezierPoint, type BezierShape } from '../BezierShapeUtil'
+import { BezierState, BezierStateActions } from '../shared/bezierState'
+import { BezierBounds } from '../shared/bezierBounds'
+import { BezierInteractionDetector, type InteractionContext } from '../shared/bezierInteractionDetector'
+import { bezierLog, BEZIER_TIMING, BEZIER_THRESHOLDS } from '../shared/bezierConstants'
 import type { JsonObject } from '@tldraw/utils'
 
 /**

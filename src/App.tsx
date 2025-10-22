@@ -15,12 +15,12 @@ import {
 } from '@tldraw/tldraw'
 import '@tldraw/tldraw/tldraw.css'
 import './App.css'
-import { BezierShapeUtil } from './components/shapes/BezierShape'
-import { BezierTool } from './components/shapes/tools/BezierTool'
-import { BezierEditModeService } from './components/shapes/services/BezierEditModeService'
+import { BezierShapeUtil } from './lib/shapes/bezier/BezierShapeUtil'
+import { BezierShapeTool } from './lib/shapes/bezier/BezierShapeTool'
+import { BezierEditModeService } from './lib/shapes/bezier/tooling/BezierEditModeService'
 
 const customShapeUtils = [BezierShapeUtil]
-const customTools = [BezierTool]
+const customTools = [BezierShapeTool]
 
 // UI overrides to add bezier tool to the tools menu
 const uiOverrides: TLUiOverrides = {

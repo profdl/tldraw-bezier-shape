@@ -1,4 +1,4 @@
-import { BaseBoxShapeUtil, type TLBaseBoxShape } from 'tldraw'
+import { BaseBoxShapeUtil, type TLBaseBoxShape } from '@tldraw/editor'
 
 /**
  * Base class for shapes that support flipping

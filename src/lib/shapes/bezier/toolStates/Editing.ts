@@ -3,13 +3,13 @@ import {
   type TLPointerEventInfo,
   type TLKeyboardEventInfo,
   type TLShapeId,
-} from 'tldraw'
-import { type BezierShape } from '../../BezierShape'
-import { BezierState, BezierStateActions } from '../../services/BezierState'
-import { BezierBounds } from '../../services/BezierBounds'
-import { bezierLog } from '../../utils/bezierConstants'
+} from '@tldraw/editor'
+import { type BezierShape } from '../BezierShapeUtil'
+import { BezierState, BezierStateActions } from '../shared/bezierState'
+import { BezierBounds } from '../shared/bezierBounds'
+import { bezierLog } from '../shared/bezierConstants'
 
-export class BezierEditing extends StateNode {
+export class Editing extends StateNode {
   static override id = 'editing'
 
   private targetShapeId?: TLShapeId

@@ -1,7 +1,7 @@
 import { StateNode, type TLPointerEventInfo, type TLShapeId } from '@tldraw/editor'
-import { type BezierShape } from '../../BezierShape'
+import { type BezierShape } from '../BezierShapeUtil'
 
-export class BezierIdle extends StateNode {
+export class Idle extends StateNode {
   static override id = 'idle'
 
   override onEnter(info?: { extendingShapeId?: string; extendFromStart?: boolean }) {

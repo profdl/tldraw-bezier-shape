@@ -1,5 +1,5 @@
-import { type BezierPoint, type BezierShape } from '../BezierShape'
-import { BezierMath } from './BezierMath'
+import { type BezierPoint, type BezierShape } from '../BezierShapeUtil'
+import { BezierMath } from './bezierMath'
 
 /**
  * Bounds calculation and normalization service for Bezier shapes.

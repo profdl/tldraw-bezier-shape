@@ -1,6 +1,6 @@
-import { type Editor } from 'tldraw'
-import { type BezierPoint, type BezierShape } from '../BezierShape'
-import { BEZIER_THRESHOLDS } from '../utils/bezierConstants'
+import { type Editor } from '@tldraw/editor'
+import { type BezierPoint, type BezierShape } from '../BezierShapeUtil'
+import { BEZIER_THRESHOLDS } from './bezierConstants'
 
 /**
  * Context information about where the user clicked/hovered on a bezier shape.
