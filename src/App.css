@@ -1,0 +1,11 @@
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background-color: #f8fafc;
+}
+
+.app {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
