@@ -135,8 +135,8 @@ Toggle between modes:
         │  └─────────────────────────────┘ │
         │                                   │
         │  ┌─────────────────────────────┐ │
-        │  │  BezierEditModeService      │ │
-        │  │  (global event handling)    │ │
+        │  │  Tool state logic          │ │
+        │  │  (BezierEditing, etc.)     │ │
         │  └─────────────────────────────┘ │
         │                                   │
         └───────────────────────────────────┘
@@ -196,20 +196,18 @@ BezierBounds.recalculateShapeBounds(shape, newPoints) → updated shape
 BezierBounds.getAccurateBounds(points, isClosed) → bounds
 ```
 
-#### BezierEditModeService
-**Purpose**: Global event handling for edit mode interactions
+#### Bezier editing state
+**Purpose**: Handles edit-mode interactions within the `BezierShapeTool` state machine.
 
 **Responsibilities**:
-- Listen to pointer/keyboard events at canvas level
+- Listen for pointer events while the tool is in `editing`
 - Detect double-clicks (toggle point type)
-- Handle segment dragging (Alt+drag)
-- Manage hover previews for adding points
-- Track Alt key state for symmetry breaking
+- Delegate anchor selection / point insertion to `BezierState`
+- Exit edit mode on Escape / Enter or pointer-up on the canvas
 
-**Lifecycle**:
-- Created once in TldrawCanvas when editor mounts
-- Listens to events with capture phase
-- Destroyed when editor unmounts
+**Implementation**:
+- Lives in `src/lib/shapes/bezier/toolStates/Editing.ts`
+- Uses the editor's built-in event data instead of attaching DOM listeners
 
 ### Tool States (`src/components/shapes/tools/states/`)
 
@@ -311,16 +309,17 @@ const updatedShape = BezierBounds.recalculateShapeBounds(shape, points)
 
 1. User double-clicks shape (in select tool) → `BezierShapeUtil.onDoubleClick()`
 2. Shape enters edit mode → `BezierState.enterEditMode()`
-3. `BezierEditModeService` detects edit mode shape, starts handling events
-4. User clicks anchor → service calls `BezierState.handlePointSelection()`
-5. User drags anchor → TLDraw's handle system calls `BezierShapeUtil.onHandleDrag()`
-6. User presses Delete → service calls `BezierState.deleteSelectedPoints()`
-7. User presses Escape → `BezierState.exitEditMode()` → back to normal mode
+3. `BezierEditing` state handles pointer / keyboard events
+4. User clicks anchor → state calls `BezierState.handlePointSelection()`
+5. User alt+drags segment → `BezierEditing` adjusts control handles symmetrically
+6. User drags anchor → TLDraw's handle system calls `BezierShapeUtil.onHandleDrag()`
+7. User presses Delete → state calls `BezierState.deleteSelectedPoints()`
+8. User presses Escape → `BezierState.exitEditMode()` → back to normal mode
 
 ### Adding a Point
 
 1. User clicks on curve segment (in edit mode)
-2. `BezierEditModeService.handlePointerDown()` detects segment click
+2. `BezierEditing.onPointerDown()` detects segment click
 3. Convert page coords to local coords
 4. `BezierState.getSegmentAtPosition()` finds which segment (returns t value)
 5. `BezierState.addPointToSegment()` uses `BezierMath.splitSegmentAtT()`
@@ -387,7 +386,7 @@ editor.updateShape(updatedShape);
 
 ### Adding a New Keyboard Shortcut
 
-Edit `BezierEditModeService.handleKeyDown()`:
+Edit `BezierEditing.onKeyDown()`:
 
 ```typescript
 private handleKeyDown(e: KeyboardEvent) {
@@ -427,7 +426,7 @@ static mirrorPoint(shape: BezierShape, pointIndex: number): BezierShape {
 }
 ```
 
-2. Call from appropriate event handler in `BezierEditModeService` or tool state
+2. Call from the appropriate event handler in `BezierEditing`
 
 ### Adding a New Math Operation
 
@@ -461,7 +460,7 @@ Needed test coverage:
 - ⬜ `BezierMath.test.ts` - Mathematical operations
 - ⬜ `BezierBounds.test.ts` - Bounds calculations
 - ⬜ Integration tests for full create/edit workflows
-- ⬜ `BezierEditModeService.test.ts` - Event handling logic
+- ⬜ `BezierEditing.test.ts` - Event handling logic
 
 ## Performance Considerations
 
@@ -479,9 +478,9 @@ Needed test coverage:
 
 ### Event Handling
 
-- `BezierEditModeService` uses event capture to intercept events early
-- Only processes events when a shape is in edit mode
-- Delegates heavy lifting to pure functions in service layer
+- Tool states use TLDraw's state node hooks (no global DOM listeners)
+- Logic only runs while a bezier shape is in edit mode
+- Delegates heavy lifting to pure functions in the shared service layer
 
 ## Common Pitfalls
 

@@ -16,11 +16,10 @@ import {
 import { BEZIER_STYLES, bezierLog, STROKE_SIZES } from './shared/bezierConstants'
 import { BezierShapeSvg } from './components/BezierShapeSvg'
 import { BezierControlPoints } from './components/BezierControlPoints'
-import { BezierHoverPreview } from './components/BezierHoverPreview'
 import { LRUCache } from '../../../utils/LRUCache'
 import { debugLog } from '../../../utils/debug'
-import { bezierSegmentToPath } from './shared/bezierPathHelpers'
 import { getPathForBezierShape } from './shared/bezierPathBuilder'
+import { bezierSegmentToPath } from './shared/bezierPathHelpers'
 import { getFillDefForExport, getFillDefForCanvas } from './shared/fillDefs'
 import {
   type BezierShape,
@@ -40,12 +39,17 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
   static override props = bezierShapeProps
   static override migrations = bezierShapeMigrations
 
+  // Track clicks for double-click detection on handles
+  private lastClickTime = 0
+  private lastClickedHandleId: string | null = null
+  private readonly DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
+
   override getDefaultProps(): BezierShape['props'] {
     return getDefaultBezierProps()
   }
 
   override component(shape: BezierShape) {
-    const { points, editMode, selectedPointIndices = [], selectedSegmentIndex, hoverPoint, isClosed } = shape.props
+    const { points, editMode, selectedPointIndices = [], selectedSegmentIndex, isClosed } = shape.props
 
     // Render using tldraw's native PathBuilder system
     return (
@@ -56,7 +60,6 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
           {/* Edit mode overlays (rendered in edit mode only) */}
           {editMode && (
             <>
-              {/* Highlight selected segment */}
               {typeof selectedSegmentIndex === 'number' && (
                 <path
                   d={bezierSegmentToPath(points, selectedSegmentIndex, isClosed)}
@@ -69,15 +72,7 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
                   strokeDasharray={BEZIER_STYLES.SEGMENT_HIGHLIGHT_DASH}
                 />
               )}
-
-              {/* Hover preview for Alt+click point addition */}
-              <BezierHoverPreview hoverPoint={hoverPoint} />
-
-              {/* Control points and anchor points */}
-              <BezierControlPoints
-                points={points}
-                selectedPointIndices={selectedPointIndices}
-              />
+              <BezierControlPoints points={points} selectedPointIndices={selectedPointIndices} />
             </>
           )}
         </SVGContainer>
@@ -284,13 +279,158 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
   }
 
 
-  // Double-click to enter edit mode when using the select tool
+  // Pointer down handler for edit mode interactions
+  override onPointerDown = (shape: BezierShape) => {
+    console.log('[BezierShapeUtil] onPointerDown called', {
+      shapeId: shape.id,
+      editMode: shape.props.editMode,
+      currentTool: this.editor.getCurrentToolId()
+    })
+
+    if (!shape.props.editMode) {
+      console.log('[BezierShapeUtil] onPointerDown: Not in edit mode')
+      return
+    }
+
+    console.log('[BezierShapeUtil] onPointerDown: In edit mode, handling interactions')
+
+    const pagePoint = this.editor.inputs.currentPagePoint.clone()
+    const shapePageBounds = this.editor.getShapePageBounds(shape.id)
+    if (!shapePageBounds) return
+
+    const localPoint = {
+      x: pagePoint.x - shapePageBounds.x,
+      y: pagePoint.y - shapePageBounds.y
+    }
+
+    const zoom = this.editor.getZoomLevel()
+
+    // Check for anchor point selection
+    const anchorIndex = BezierState.getAnchorPointAt(shape.props.points, localPoint, zoom)
+    console.log('[BezierShapeUtil] onPointerDown: anchorIndex =', anchorIndex)
+    if (anchorIndex !== -1) {
+      // Detect double-click on anchor point
+      const now = Date.now()
+      const handleId = `anchor-${anchorIndex}`
+      const isDoubleClick =
+        now - this.lastClickTime < this.DOUBLE_CLICK_THRESHOLD &&
+        this.lastClickedHandleId === handleId
+
+      this.lastClickTime = now
+      this.lastClickedHandleId = handleId
+
+      if (isDoubleClick) {
+        console.log('[BezierShapeUtil] onPointerDown: DOUBLE-CLICK detected on anchor', anchorIndex)
+        BezierStateActions.togglePointType(this.editor, shape, anchorIndex)
+        return
+      }
+
+      console.log('[BezierShapeUtil] onPointerDown: Selecting anchor', anchorIndex, 'shiftKey:', this.editor.inputs.shiftKey)
+      BezierStateActions.handlePointSelection(this.editor, shape, anchorIndex, this.editor.inputs.shiftKey)
+      return
+    }
+
+    // Check for control point (let handle system manage it)
+    const controlInfo = BezierState.getControlPointAt(shape.props.points, localPoint, zoom)
+    console.log('[BezierShapeUtil] onPointerDown: controlInfo =', controlInfo)
+    if (controlInfo) {
+      console.log('[BezierShapeUtil] onPointerDown: Control point detected, letting handle system manage it')
+      return
+    }
+
+    // Check for segment selection
+    const segmentInfo = BezierState.getSegmentAtPosition(shape.props.points, localPoint, zoom, shape.props.isClosed)
+    console.log('[BezierShapeUtil] onPointerDown: segmentInfo =', segmentInfo)
+    if (segmentInfo) {
+      console.log('[BezierShapeUtil] onPointerDown: Selecting segment', segmentInfo.segmentIndex)
+      BezierStateActions.selectSegment(this.editor, shape, segmentInfo.segmentIndex)
+      return
+    }
+
+    // Clicked inside shape but not on any interactive element - clear selections
+    console.log('[BezierShapeUtil] onPointerDown: Clearing selections')
+    BezierStateActions.clearPointSelection(this.editor, shape)
+    BezierStateActions.clearSegmentSelection(this.editor, shape)
+
+    // Reset double-click tracking if clicking elsewhere
+    this.lastClickedHandleId = null
+  }
+
+  // Double-click handler for both entering edit mode and edit mode interactions
+  override onDoubleClickEdge = (shape: BezierShape) => {
+    console.log('[BezierShapeUtil] onDoubleClickEdge called', {
+      shapeId: shape.id,
+      editMode: shape.props.editMode,
+    })
+
+    // When in edit mode, prevent default text tool behavior
+    if (shape.props.editMode) {
+      console.log('[BezierShapeUtil] onDoubleClickEdge: Preventing default, staying in edit mode')
+      return
+    }
+  }
+
+  // Double-click handler for both entering edit mode and edit mode interactions
   override onDoubleClick = (shape: BezierShape) => {
-    // Check if this is a custom shape instance
+    console.log('[BezierShapeUtil] onDoubleClick called', {
+      shapeId: shape.id,
+      editMode: shape.props.editMode,
+      currentTool: this.editor.getCurrentToolId()
+    })
+
+    // If already in edit mode, handle point type toggling and segment point addition
+    if (shape.props.editMode) {
+      console.log('[BezierShapeUtil] onDoubleClick: In edit mode, checking for point interactions')
+
+      const pagePoint = this.editor.inputs.currentPagePoint.clone()
+      const shapePageBounds = this.editor.getShapePageBounds(shape.id)
+      if (!shapePageBounds) {
+        console.log('[BezierShapeUtil] onDoubleClick: No shape bounds, preventing default')
+        // Prevent text tool activation
+        return
+      }
+
+      const localPoint = {
+        x: pagePoint.x - shapePageBounds.x,
+        y: pagePoint.y - shapePageBounds.y
+      }
+
+      const zoom = this.editor.getZoomLevel()
+
+      console.log('[BezierShapeUtil] onDoubleClick: localPoint =', localPoint, 'zoom =', zoom, 'points =', shape.props.points)
+
+      // Check if double-clicking on an anchor point to toggle its type
+      const anchorIndex = BezierState.getAnchorPointAt(shape.props.points, localPoint, zoom)
+      console.log('[BezierShapeUtil] onDoubleClick: anchorIndex =', anchorIndex, 'from getAnchorPointAt')
+      if (anchorIndex !== -1) {
+        console.log('[BezierShapeUtil] onDoubleClick: Toggling point type for anchor', anchorIndex)
+        BezierStateActions.togglePointType(this.editor, shape, anchorIndex)
+        // Prevent text tool activation
+        return
+      }
+
+      // Check if double-clicking on a segment to add a point
+      const segmentInfo = BezierState.getSegmentAtPosition(shape.props.points, localPoint, zoom, shape.props.isClosed)
+      console.log('[BezierShapeUtil] onDoubleClick: segmentInfo =', segmentInfo)
+      if (segmentInfo) {
+        console.log('[BezierShapeUtil] onDoubleClick: Adding point to segment', segmentInfo.segmentIndex)
+        const updatedShape = BezierState.addPointToSegment(shape, segmentInfo.segmentIndex, segmentInfo.t)
+        const finalShape = BezierBounds.recalculateShapeBounds(updatedShape, updatedShape.props.points)
+        this.editor.updateShape(finalShape)
+        bezierLog('PointAdd', 'New point added at segment', segmentInfo.segmentIndex, 'using double click')
+        // Prevent text tool activation
+        return
+      }
+
+      console.log('[BezierShapeUtil] onDoubleClick: No anchor or segment hit, preventing default')
+      // Even if we didn't hit anything specific, prevent text tool activation in edit mode
+      return
+    }
+
+    // Not in edit mode - enter edit mode
     const isCustomShapeInstance = shape.meta?.isCustomShapeInstance === true
 
     if (isCustomShapeInstance) {
-      // Show notification that editing will affect all instances
       const customShapeId = shape.meta?.customShapeId
       if (customShapeId) {
         bezierLog('Edit', `Editing custom shape instance - changes will affect all instances of "${customShapeId}"`)
@@ -300,9 +440,11 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
     const currentToolId = this.editor.getCurrentToolId()
 
     if (currentToolId !== 'select') {
+      console.log('[BezierShapeUtil] onDoubleClick: Switching to select tool')
       this.editor.setCurrentTool('select')
     }
 
+    console.log('[BezierShapeUtil] onDoubleClick: Entering edit mode')
     return BezierStateActions.enterEditMode(this.editor, shape)
   }
 
@@ -344,8 +486,6 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
             editMode: false,
             selectedPointIndices: [],
             selectedSegmentIndex: undefined,
-            hoverSegmentIndex: undefined,
-            hoverPoint: undefined,
           },
         }
       : shape

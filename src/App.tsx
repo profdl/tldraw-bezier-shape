@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import {
   Tldraw,
   DefaultToolbar,
@@ -8,7 +7,6 @@ import {
   TldrawUiMenuItem,
   useIsToolSelected,
   useTools,
-  useEditor,
   type TLComponents,
   type TLUiOverrides,
   type TLUiAssetUrlOverrides,
@@ -17,7 +15,7 @@ import '@tldraw/tldraw/tldraw.css'
 import './App.css'
 import { BezierShapeUtil } from './lib/shapes/bezier/BezierShapeUtil'
 import { BezierShapeTool } from './lib/shapes/bezier/BezierShapeTool'
-import { BezierEditModeService } from './lib/shapes/bezier/tooling/BezierEditModeService'
+import { BezierEditModeHandler } from './lib/shapes/bezier/components/BezierEditModeHandler'
 
 const customShapeUtils = [BezierShapeUtil]
 const customTools = [BezierShapeTool]
@@ -36,29 +34,6 @@ const uiOverrides: TLUiOverrides = {
     }
     return tools
   },
-}
-
-// Component to initialize BezierEditModeService
-function BezierEditModeInitializer() {
-  const editor = useEditor()
-  const serviceRef = useRef<BezierEditModeService | null>(null)
-
-  useEffect(() => {
-    // Initialize the service once the editor is ready
-    if (!serviceRef.current) {
-      serviceRef.current = new BezierEditModeService(editor)
-    }
-
-    // Cleanup on unmount
-    return () => {
-      if (serviceRef.current) {
-        serviceRef.current.destroy()
-        serviceRef.current = null
-      }
-    }
-  }, [editor])
-
-  return null
 }
 
 // Custom components to add bezier tool to toolbar and keyboard shortcuts
@@ -83,7 +58,7 @@ const components: TLComponents = {
     )
   },
   InFrontOfTheCanvas: () => {
-    return <BezierEditModeInitializer />
+    return <BezierEditModeHandler />
   },
 }
 

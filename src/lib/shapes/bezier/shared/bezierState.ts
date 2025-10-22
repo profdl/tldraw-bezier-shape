@@ -42,11 +42,10 @@ export class BezierState {
    *
    * When transitioning from normal mode to edit mode:
    * - Preserves existing point selection
-   * - Clears segment selection and hover state
+   * - Clears segment selection state
    *
    * When transitioning from edit mode to normal mode:
    * - Clears all selection state
-   * - Clears hover preview state
    *
    * @param shape - The bezier shape to toggle edit mode for
    * @returns New shape object with edit mode toggled
@@ -61,8 +60,6 @@ export class BezierState {
         editMode: !shape.props.editMode,
         selectedPointIndices: shape.props.editMode ? [] : (shape.props.selectedPointIndices || []),
         selectedSegmentIndex: undefined,
-        hoverSegmentIndex: undefined,
-        hoverPoint: undefined,
       }
     }
     return updatedShape
@@ -82,8 +79,6 @@ export class BezierState {
         ...shape.props,
         editMode: true,
         selectedSegmentIndex: undefined,
-        hoverSegmentIndex: undefined,
-        hoverPoint: undefined,
       }
     }
     return updatedShape
@@ -103,8 +98,6 @@ export class BezierState {
         ...shape.props,
         editMode: false,
         selectedPointIndices: [], // Clear selection when exiting
-        hoverPoint: undefined,
-        hoverSegmentIndex: undefined,
         selectedSegmentIndex: undefined,
       }
     }
@@ -188,8 +181,6 @@ export class BezierState {
       props: {
         ...shape.props,
         selectedSegmentIndex: segmentIndex,
-        hoverSegmentIndex: segmentIndex,
-        hoverPoint: undefined,
         selectedPointIndices: [],
       }
     }
@@ -211,7 +202,6 @@ export class BezierState {
       props: {
         ...shape.props,
         selectedSegmentIndex: undefined,
-        hoverSegmentIndex: undefined,
       }
     }
     return updatedShape
@@ -384,20 +374,24 @@ export class BezierState {
    * Find anchor point at local coordinates
    */
   static getAnchorPointAt(
-    points: BezierPoint[], 
-    localPoint: { x: number; y: number }, 
+    points: BezierPoint[],
+    localPoint: { x: number; y: number },
     zoomLevel: number
   ): number {
     const threshold = BEZIER_THRESHOLDS.ANCHOR_POINT / zoomLevel
-    
+    console.log('[BezierState] getAnchorPointAt: checking', points.length, 'points with threshold', threshold)
+
     for (let i = 0; i < points.length; i++) {
       const point = points[i]
       const distance = BezierMath.getDistance(localPoint, point)
-      
+      console.log('[BezierState] getAnchorPointAt: point', i, 'at', point, 'distance', distance, 'threshold', threshold)
+
       if (distance < threshold) {
+        console.log('[BezierState] getAnchorPointAt: Found anchor at index', i)
         return i
       }
     }
+    console.log('[BezierState] getAnchorPointAt: No anchor found')
     
     return -1
   }

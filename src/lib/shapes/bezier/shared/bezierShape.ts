@@ -35,8 +35,6 @@ export interface BezierShapeProps {
 	editMode?: boolean
 	selectedPointIndices?: number[]
 	selectedSegmentIndex?: number
-	hoverPoint?: BezierPoint
-	hoverSegmentIndex?: number
 }
 
 /** @public */
@@ -95,25 +93,6 @@ export const bezierShapeProps: RecordProps<BezierShape> = {
 	editMode: T.optional(T.boolean),
 	selectedPointIndices: T.optional(T.arrayOf(T.number)),
 	selectedSegmentIndex: T.optional(T.number),
-	hoverPoint: T.optional(
-		T.object({
-			x: T.number,
-			y: T.number,
-			cp1: T.optional(
-				T.object({
-					x: T.number,
-					y: T.number,
-				})
-			),
-			cp2: T.optional(
-				T.object({
-					x: T.number,
-					y: T.number,
-				})
-			),
-		})
-	),
-	hoverSegmentIndex: T.optional(T.number),
 }
 
 const Versions = createShapePropsMigrationIds('bezier', {

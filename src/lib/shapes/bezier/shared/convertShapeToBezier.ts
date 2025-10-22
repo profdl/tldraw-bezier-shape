@@ -77,8 +77,6 @@ export function convertShapeToBezier(
         editMode: false,
         selectedPointIndices: [],
         selectedSegmentIndex: undefined,
-        hoverPoint: undefined,
-        hoverSegmentIndex: undefined,
       },
     }
 
@@ -194,8 +192,6 @@ export function convertPolylineToBezier(
         editMode: false,
         selectedPointIndices: [],
         selectedSegmentIndex: undefined,
-        hoverPoint: undefined,
-        hoverSegmentIndex: undefined,
       },
     }
 
