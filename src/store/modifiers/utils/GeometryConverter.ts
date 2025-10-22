@@ -30,10 +30,10 @@ export class GeometryConverter {
     props: {
       w: number
       h: number
-      color: string
-      fillColor: string
-      strokeWidth: number
-      fill: boolean
+      color: 'black' | 'grey' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'light-blue' | 'violet' | 'light-violet' | 'light-red' | 'light-green'
+      dash: 'draw' | 'solid' | 'dashed' | 'dotted'
+      size: 's' | 'm' | 'l' | 'xl'
+      fill: 'none' | 'semi' | 'solid' | 'pattern'
       points: BezierPoint[]
       isClosed: boolean
     }
@@ -46,9 +46,9 @@ export class GeometryConverter {
         w: 100,
         h: 100,
         color: 'black',
-        fillColor: 'none',
-        strokeWidth: 2,
-        fill: false,
+        dash: 'solid',
+        size: 'm',
+        fill: 'none',
         points: [],
         isClosed: false,
       },

@@ -49,7 +49,7 @@ export function convertShapeToBezier(
 
   let createdShape: BezierShape | null = null
 
-  const { w, h, color, fillColor, strokeWidth, fill, points, isClosed } = bezierData.props
+  const { w, h, color, dash, size, fill, points, isClosed } = bezierData.props
 
   editor.run(() => {
     editor.deleteShapes([id])
@@ -69,8 +69,8 @@ export function convertShapeToBezier(
         w,
         h,
         color,
-        fillColor,
-        strokeWidth,
+        dash,
+        size,
         fill,
         points,
         isClosed,
@@ -162,9 +162,9 @@ export function convertPolylineToBezier(
   delete cleanedMeta.isFlippedY
 
   const shapeProps = shape.props as Record<string, unknown>
-  const color = typeof shapeProps.color === 'string' ? shapeProps.color : '#000000'
-  const strokeWidth = typeof shapeProps.strokeWidth === 'number' ? shapeProps.strokeWidth : 1
-  const fillColor = typeof shapeProps.fillColor === 'string' ? shapeProps.fillColor : 'transparent'
+  const color = (typeof shapeProps.color === 'string' ? shapeProps.color : 'black') as 'black' | 'grey' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'light-blue' | 'violet' | 'light-violet' | 'light-red' | 'light-green'
+  const size = (typeof shapeProps.size === 'string' ? shapeProps.size : 'm') as 's' | 'm' | 'l' | 'xl'
+  const dash = (typeof shapeProps.dash === 'string' ? shapeProps.dash : 'solid') as 'draw' | 'solid' | 'dashed' | 'dotted'
 
   let createdShape: BezierShape | null = null
 
@@ -186,9 +186,9 @@ export function convertPolylineToBezier(
         w: width,
         h: height,
         color,
-        fillColor,
-        strokeWidth,
-        fill: false,
+        dash,
+        size,
+        fill: 'none',
         points: bezierPoints,
         isClosed: options.isClosed ?? false,
         editMode: false,

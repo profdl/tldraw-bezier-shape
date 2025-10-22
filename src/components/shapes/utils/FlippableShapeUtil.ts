@@ -9,14 +9,14 @@ export abstract class FlippableShapeUtil<
 > extends BaseBoxShapeUtil<Shape> {
 
   /**
-   * Get common default props including color, fill, and stroke
+   * Get common default props using tldraw's native style system
    */
   protected getCommonDefaultProps() {
     return {
-      color: 'black',
-      fillColor: 'none',
-      strokeWidth: 2,
-      fill: false,
+      color: 'black' as const,
+      dash: 'solid' as const,
+      size: 'm' as const,
+      fill: 'none' as const,
     }
   }
 

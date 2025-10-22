@@ -1,9 +1,9 @@
 /**
- * Default properties for bezier shapes
+ * Default properties for bezier shapes using tldraw's native style system
  */
 export const DEFAULT_SHAPE_PROPS = {
-  color: 'black',
-  fillColor: 'none',
-  strokeWidth: 2,
-  fill: false,
+  color: 'black' as const,
+  dash: 'solid' as const,
+  size: 'm' as const,
+  fill: 'none' as const,
 }

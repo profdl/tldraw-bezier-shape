@@ -7,6 +7,16 @@ import {
   type TLResizeInfo,
   type TLShapePartial
 } from 'tldraw'
+import {
+  type TLDefaultColorStyle,
+  type TLDefaultDashStyle,
+  type TLDefaultSizeStyle,
+  type TLDefaultFillStyle,
+  DefaultColorStyle,
+  DefaultDashStyle,
+  DefaultSizeStyle,
+  DefaultFillStyle,
+} from '@tldraw/tlschema'
 import { FlippableShapeUtil } from './utils/FlippableShapeUtil'
 import { BezierBounds } from './services/BezierBounds'
 import { BezierState, BezierStateActions } from './services/BezierState'
@@ -36,6 +46,7 @@ export interface BezierPoint {
 
 /**
  * Bezier shape type for creating curved paths with bezier control points.
+ * Now uses tldraw's native style system for consistent rendering.
  *
  * @public
  */
@@ -44,10 +55,10 @@ export type BezierShape = TLBaseShape<
   {
     w: number
     h: number
-    color: string
-    fillColor: string
-    strokeWidth: number
-    fill: boolean
+    color: TLDefaultColorStyle
+    dash: TLDefaultDashStyle
+    size: TLDefaultSizeStyle
+    fill: TLDefaultFillStyle
     points: BezierPoint[]
     isClosed: boolean
     holeRings?: BezierPoint[][]
@@ -71,10 +82,10 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
   static override props: RecordProps<BezierShape> = {
     w: T.number,
     h: T.number,
-    color: T.string,
-    fillColor: T.string,
-    strokeWidth: T.number,
-    fill: T.boolean,
+    color: DefaultColorStyle,
+    dash: DefaultDashStyle,
+    size: DefaultSizeStyle,
+    fill: DefaultFillStyle,
     points: T.arrayOf(T.object({
       x: T.number,
       y: T.number,
@@ -129,7 +140,7 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
   }
 
   override component(shape: BezierShape) {
-    const { points, color, fillColor, strokeWidth, fill, isClosed, editMode, selectedPointIndices = [], selectedSegmentIndex, hoverPoint, holeRings } = shape.props
+    const { points, color, dash, size, fill, isClosed, editMode, selectedPointIndices = [], selectedSegmentIndex, hoverPoint, holeRings } = shape.props
 
     // Note: This is a class component following TLDraw's ShapeUtil pattern
     // FUTURE CONSIDERATION: Could potentially refactor to functional component if more hook usage is needed
@@ -154,17 +165,17 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
 
     return (
       <HTMLContainer style={{ cursor: 'default' }}>
-        <svg 
-          width={shape.props.w} 
-          height={shape.props.h} 
+        <svg
+          width={shape.props.w}
+          height={shape.props.h}
           style={{ overflow: 'visible' }}
         >
           {/* Main bezier path */}
           <BezierPath
             pathData={pathData}
             color={color}
-            fillColor={fillColor}
-            strokeWidth={strokeWidth}
+            dash={dash}
+            size={size}
             fill={fill}
             isClosed={isClosed}
             editMode={!!editMode}
