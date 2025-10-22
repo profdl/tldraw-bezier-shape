@@ -6,6 +6,8 @@ import type { TLDefaultSizeStyle, TLDefaultDashStyle, TLDefaultFillStyle } from 
 
 /**
  * Map tldraw size style to stroke width in pixels
+ * These values match tldraw's native STROKE_SIZES exactly
+ * Source: packages/tldraw/src/lib/shapes/shared/default-shape-constants.ts
  */
 export const STROKE_WIDTHS: Record<TLDefaultSizeStyle, number> = {
   's': 2,
