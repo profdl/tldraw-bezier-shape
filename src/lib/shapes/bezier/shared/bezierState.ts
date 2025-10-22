@@ -1,5 +1,5 @@
 import { type Editor, type TLHandle } from '@tldraw/editor'
-import { type BezierPoint, type BezierShape } from '../BezierShapeUtil'
+import { type BezierPoint, type BezierShape } from './bezierShape'
 import { BezierMath } from './bezierMath'
 import { BEZIER_THRESHOLDS, bezierLog } from './bezierConstants'
 import { parseHandleId } from './bezierHandleUtils'

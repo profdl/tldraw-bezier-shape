@@ -1,4 +1,4 @@
-import { type BezierPoint, type BezierShape } from '../BezierShapeUtil'
+import { type BezierPoint, type BezierShape } from './bezierShape'
 import { BezierMath } from './bezierMath'
 
 /**

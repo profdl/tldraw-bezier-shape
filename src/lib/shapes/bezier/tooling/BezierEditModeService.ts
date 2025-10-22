@@ -1,5 +1,5 @@
 import { type Editor, type TLShapeId } from '@tldraw/editor'
-import { type BezierPoint, type BezierShape } from '../BezierShapeUtil'
+import { type BezierPoint, type BezierShape } from '../shared/bezierShape'
 import { BezierState, BezierStateActions } from '../shared/bezierState'
 import { BezierBounds } from '../shared/bezierBounds'
 import { BezierInteractionDetector, type InteractionContext } from '../shared/bezierInteractionDetector'

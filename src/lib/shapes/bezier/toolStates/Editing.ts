@@ -4,7 +4,7 @@ import {
   type TLKeyboardEventInfo,
   type TLShapeId,
 } from '@tldraw/editor'
-import { type BezierShape } from '../BezierShapeUtil'
+import { type BezierShape } from '../shared/bezierShape'
 import { BezierState, BezierStateActions } from '../shared/bezierState'
 import { BezierBounds } from '../shared/bezierBounds'
 import { bezierLog } from '../shared/bezierConstants'

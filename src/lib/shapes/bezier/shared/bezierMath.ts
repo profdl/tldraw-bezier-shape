@@ -1,5 +1,5 @@
 import { Bezier } from 'bezier-js'
-import { type BezierPoint } from '../BezierShapeUtil'
+import { type BezierPoint } from './bezierShape'
 import { BEZIER_HANDLES } from './bezierConstants'
 
 /**

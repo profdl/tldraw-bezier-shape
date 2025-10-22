@@ -1,6 +1,6 @@
 import { getColorValue, useEditor, useValue } from '@tldraw/editor'
 import type { PathBuilder } from 'tldraw'
-import type { BezierShape } from '../BezierShapeUtil'
+import type { BezierShape } from '../shared/bezierShape'
 import { useDefaultColorTheme } from '../../../../hooks/useDefaultColorTheme'
 import { getPathForBezierShape, getPathForHoleRings } from '../shared/bezierPathBuilder'
 import { STROKE_SIZES } from '../shared/bezierConstants'

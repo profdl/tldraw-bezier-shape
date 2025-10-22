@@ -1,5 +1,5 @@
 import { type Editor } from '@tldraw/editor'
-import { type BezierPoint, type BezierShape } from '../BezierShapeUtil'
+import { type BezierPoint, type BezierShape } from './bezierShape'
 import { BEZIER_THRESHOLDS } from './bezierConstants'
 
 /**

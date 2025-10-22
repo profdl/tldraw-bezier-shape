@@ -1,5 +1,5 @@
 import { StateNode, type TLPointerEventInfo, type TLShapeId } from '@tldraw/editor'
-import { type BezierShape } from '../BezierShapeUtil'
+import { type BezierShape } from '../shared/bezierShape'
 
 export class Idle extends StateNode {
   static override id = 'idle'

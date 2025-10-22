@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react'
 import { type Editor } from '@tldraw/editor'
-import { type BezierShape, type BezierPoint } from '../BezierShapeUtil'
+import { type BezierShape, type BezierPoint } from '../shared/bezierShape'
 import { BezierMath } from '../shared/bezierMath'
 import { BezierState } from '../shared/bezierState'
 import { BEZIER_THRESHOLDS } from '../shared/bezierConstants'

@@ -1,6 +1,6 @@
 import { type Bezier } from 'bezier-js'
 import { type TLHandle, type IndexKey } from '@tldraw/editor'
-import { type BezierPoint, type BezierShape } from '../BezierShapeUtil'
+import { type BezierPoint, type BezierShape } from './bezierShape'
 import { BEZIER_THRESHOLDS, bezierLog } from './bezierConstants'
 import { BezierMath } from './bezierMath'
 import { createHandleId } from './bezierHandleUtils'

@@ -6,7 +6,7 @@ import {
   Vec,
   type TLShapePartial,
 } from '@tldraw/editor'
-import { type BezierShape, type BezierPoint } from '../BezierShapeUtil'
+import { type BezierShape, type BezierPoint } from '../shared/bezierShape'
 import {
   BEZIER_THRESHOLDS,
   BEZIER_HANDLES,

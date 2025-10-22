@@ -1,24 +1,11 @@
 import {
   SVGContainer,
   SvgExportContext,
-  T,
   TLShapeUtilCanvasSvgDef,
-  type TLBaseShape,
-  type RecordProps,
   type TLHandle,
   type TLResizeInfo,
   type TLShapePartial,
 } from '@tldraw/editor'
-import {
-  type TLDefaultColorStyle,
-  type TLDefaultDashStyle,
-  type TLDefaultSizeStyle,
-  type TLDefaultFillStyle,
-  DefaultColorStyle,
-  DefaultDashStyle,
-  DefaultSizeStyle,
-  DefaultFillStyle,
-} from '@tldraw/tlschema'
 import { FlippableShapeUtil } from './shared/FlippableShapeUtil'
 import { BezierBounds } from './shared/bezierBounds'
 import { BezierState, BezierStateActions } from './shared/bezierState'
@@ -35,115 +22,26 @@ import { debugLog } from '../../../utils/debug'
 import { bezierSegmentToPath } from './shared/bezierPathHelpers'
 import { getPathForBezierShape } from './shared/bezierPathBuilder'
 import { getFillDefForExport, getFillDefForCanvas } from './shared/fillDefs'
+import {
+  type BezierShape,
+  type BezierPoint,
+  bezierShapeProps,
+  bezierShapeMigrations,
+  getDefaultBezierProps,
+} from './shared/bezierShape'
 
 /**
  * A point on a bezier curve with optional control points.
  *
  * @public
  */
-export interface BezierPoint {
-  x: number
-  y: number
-  cp1?: { x: number; y: number } // Control point 1 (incoming)
-  cp2?: { x: number; y: number } // Control point 2 (outgoing)
-}
-
-/**
- * Bezier shape type for creating curved paths with bezier control points.
- * Now uses tldraw's native style system for consistent rendering.
- *
- * @public
- */
-export type BezierShape = TLBaseShape<
-  'bezier',
-  {
-    w: number
-    h: number
-    color: TLDefaultColorStyle
-    dash: TLDefaultDashStyle
-    size: TLDefaultSizeStyle
-    fill: TLDefaultFillStyle
-    scale: number
-    points: BezierPoint[]
-    isClosed: boolean
-    holeRings?: BezierPoint[][]
-    editMode?: boolean
-    selectedPointIndices?: number[]
-    selectedSegmentIndex?: number
-    hoverPoint?: { x: number; y: number; cp1?: { x: number; y: number }; cp2?: { x: number; y: number } }
-    hoverSegmentIndex?: number
-  }
->
-
-
-/**
- * Shape utility for bezier path shapes.
- *
- * @public
- */
 export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
   static override type = 'bezier' as const
-
-  static override props: RecordProps<BezierShape> = {
-    w: T.number,
-    h: T.number,
-    color: DefaultColorStyle,
-    dash: DefaultDashStyle,
-    size: DefaultSizeStyle,
-    fill: DefaultFillStyle,
-    scale: T.number,
-    points: T.arrayOf(T.object({
-      x: T.number,
-      y: T.number,
-      cp1: T.optional(T.object({
-        x: T.number,
-        y: T.number,
-      })),
-      cp2: T.optional(T.object({
-        x: T.number,
-        y: T.number,
-      })),
-    })),
-    isClosed: T.boolean,
-    holeRings: T.optional(T.arrayOf(T.arrayOf(T.object({
-      x: T.number,
-      y: T.number,
-      cp1: T.optional(T.object({
-        x: T.number,
-        y: T.number,
-      })),
-      cp2: T.optional(T.object({
-        x: T.number,
-        y: T.number,
-      })),
-    })))),
-    editMode: T.optional(T.boolean),
-    selectedPointIndices: T.optional(T.arrayOf(T.number)),
-    selectedSegmentIndex: T.optional(T.number),
-    hoverPoint: T.optional(T.object({
-      x: T.number,
-      y: T.number,
-      cp1: T.optional(T.object({
-        x: T.number,
-        y: T.number,
-      })),
-      cp2: T.optional(T.object({
-        x: T.number,
-        y: T.number,
-      })),
-    })),
-    hoverSegmentIndex: T.optional(T.number),
-  }
+  static override props = bezierShapeProps
+  static override migrations = bezierShapeMigrations
 
   override getDefaultProps(): BezierShape['props'] {
-    return {
-      w: 1,
-      h: 1,
-      scale: 1,
-      points: [],
-      isClosed: false,
-      ...this.getCommonDefaultProps(),
-    }
+    return getDefaultBezierProps()
   }
 
   override component(shape: BezierShape) {
