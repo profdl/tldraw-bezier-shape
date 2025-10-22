@@ -270,44 +270,53 @@ export class BezierState {
     shape: BezierShape,
     pointIndex: number
   ): BezierShape {
-    if (pointIndex < 0 || pointIndex >= shape.props.points.length) return shape
-    
+    console.log('[BezierState] togglePointType called for point', pointIndex)
+    if (pointIndex < 0 || pointIndex >= shape.props.points.length) {
+      console.log('[BezierState] togglePointType: invalid index', pointIndex)
+      return shape
+    }
+
     const newPoints = [...shape.props.points]
     const point = newPoints[pointIndex]
-    
+
     // Check if the point currently has control points (smooth) or not (corner)
     const hasControlPoints = point.cp1 || point.cp2
-    
+    console.log('[BezierState] togglePointType: point has control points?', hasControlPoints, 'cp1:', point.cp1, 'cp2:', point.cp2)
+
     if (hasControlPoints) {
       // Convert smooth point to corner point (remove control points)
       newPoints[pointIndex] = {
         x: point.x,
         y: point.y,
       }
+      console.log('[BezierState] togglePointType: Converted to corner point:', pointIndex)
       bezierLog('PointType', 'Converted to corner point:', pointIndex)
     } else {
       // Convert corner point to smooth point (add control points)
-      const prevIndex = pointIndex === 0 ? 
-        (shape.props.isClosed ? shape.props.points.length - 1 : -1) : 
+      const prevIndex = pointIndex === 0 ?
+        (shape.props.isClosed ? shape.props.points.length - 1 : -1) :
         pointIndex - 1
-      const nextIndex = pointIndex === shape.props.points.length - 1 ? 
-        (shape.props.isClosed ? 0 : -1) : 
+      const nextIndex = pointIndex === shape.props.points.length - 1 ?
+        (shape.props.isClosed ? 0 : -1) :
         pointIndex + 1
-      
+
       const prevPoint = prevIndex >= 0 ? shape.props.points[prevIndex] : null
       const nextPoint = nextIndex >= 0 ? shape.props.points[nextIndex] : null
-      
+
+      console.log('[BezierState] togglePointType: Creating smooth control points with prev:', prevPoint, 'next:', nextPoint)
       const controlPoints = BezierMath.createSmoothControlPoints(prevPoint, point, nextPoint)
-      
+      console.log('[BezierState] togglePointType: Created control points:', controlPoints)
+
       newPoints[pointIndex] = {
         x: point.x,
         y: point.y,
         cp1: controlPoints.cp1,
         cp2: controlPoints.cp2,
       }
+      console.log('[BezierState] togglePointType: Converted to smooth point:', pointIndex, newPoints[pointIndex])
       bezierLog('PointType', 'Converted to smooth point:', pointIndex)
     }
-    
+
     const updatedShape = {
       ...shape,
       props: {
@@ -316,6 +325,7 @@ export class BezierState {
         selectedSegmentIndex: undefined,
       }
     }
+    console.log('[BezierState] togglePointType: Returning updated shape')
     return updatedShape
   }
 
@@ -431,23 +441,35 @@ export class BezierState {
    * Find segment at position for point insertion
    */
   static getSegmentAtPosition(
-    points: BezierPoint[], 
-    localPoint: { x: number; y: number }, 
+    points: BezierPoint[],
+    localPoint: { x: number; y: number },
     zoomLevel: number,
     isClosed: boolean = false
   ): { segmentIndex: number; t: number } | null {
     const threshold = BEZIER_THRESHOLDS.PATH_SEGMENT / zoomLevel
+    const anchorExclusionRadius = BEZIER_THRESHOLDS.SEGMENT_ANCHOR_EXCLUSION / zoomLevel
+
+    // Check if we're too close to any anchor point
+    // If so, don't return a segment hit - prioritize anchor points
+    for (const point of points) {
+      const distanceToAnchor = BezierMath.getDistance(localPoint, point)
+      if (distanceToAnchor < anchorExclusionRadius) {
+        console.log('[BezierState] getSegmentAtPosition: Too close to anchor point, excluding segment hit')
+        return null
+      }
+    }
+
     const segments = BezierMath.getAllSegments(points, isClosed)
-    
+
     for (let i = 0; i < segments.length; i++) {
       const segment = segments[i]
       const projected = segment.project(localPoint)
-      
+
       if ((projected.d || 0) < threshold) {
         return { segmentIndex: i, t: projected.t || 0 }
       }
     }
-    
+
     return null
   }
 

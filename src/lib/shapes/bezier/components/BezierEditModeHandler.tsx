@@ -59,24 +59,38 @@ export function BezierEditModeHandler() {
 
       const zoom = editor.getZoomLevel()
 
-      // Detect double-click
+      // Detect double-click using position-based approach (like the old working version)
       const now = Date.now()
       const currentPosition = { x: e.clientX, y: e.clientY }
+      const timeSinceLastClick = now - lastClickTimeRef.current
+      const distanceFromLastClick = Math.sqrt(
+        Math.pow(currentPosition.x - lastClickPositionRef.current.x, 2) +
+        Math.pow(currentPosition.y - lastClickPositionRef.current.y, 2)
+      )
       const isDoubleClick =
-        now - lastClickTimeRef.current < DOUBLE_CLICK_THRESHOLD &&
-        Math.abs(currentPosition.x - lastClickPositionRef.current.x) < DOUBLE_CLICK_DISTANCE &&
-        Math.abs(currentPosition.y - lastClickPositionRef.current.y) < DOUBLE_CLICK_DISTANCE
+        timeSinceLastClick < DOUBLE_CLICK_THRESHOLD &&
+        distanceFromLastClick < DOUBLE_CLICK_DISTANCE
 
+      console.log('[BezierEditModeHandler] Click detection:', {
+        timeSinceLastClick,
+        distanceFromLastClick,
+        isDoubleClick,
+        threshold: DOUBLE_CLICK_THRESHOLD,
+        distanceThreshold: DOUBLE_CLICK_DISTANCE,
+      })
+
+      // Always update tracking state for next click
       lastClickTimeRef.current = now
       lastClickPositionRef.current = currentPosition
 
-      // Check if clicking on an anchor point
+      // Check if clicking on an anchor point FIRST (higher priority than segments)
       const anchorIndex = BezierState.getAnchorPointAt(
         editingShape.props.points,
         localPoint,
         zoom
       )
 
+      // Handle anchor point interactions
       if (anchorIndex !== -1) {
         console.log('[BezierEditModeHandler] Clicked on anchor', anchorIndex, 'isDoubleClick:', isDoubleClick)
 
@@ -90,6 +104,7 @@ export function BezierEditModeHandler() {
         }
 
         // Single click - handle point selection
+        console.log('[BezierEditModeHandler] Single click on anchor - selecting')
         BezierStateActions.handlePointSelection(
           editor,
           editingShape,
@@ -99,7 +114,7 @@ export function BezierEditModeHandler() {
         return
       }
 
-      // Check if clicking on a segment
+      // Check if clicking on a segment (only if not on an anchor point)
       const segmentInfo = BezierState.getSegmentAtPosition(
         editingShape.props.points,
         localPoint,
@@ -107,27 +122,27 @@ export function BezierEditModeHandler() {
         editingShape.props.isClosed
       )
 
-      if (segmentInfo && isDoubleClick) {
-        console.log('[BezierEditModeHandler] DOUBLE-CLICK on segment - adding point')
-        const updatedShape = BezierState.addPointToSegment(
-          editingShape,
-          segmentInfo.segmentIndex,
-          segmentInfo.t
-        )
-        const finalShape = BezierBounds.recalculateShapeBounds(
-          updatedShape,
-          updatedShape.props.points
-        )
-        editor.updateShape(finalShape)
-        bezierLog('PointAdd', 'New point added at segment', segmentInfo.segmentIndex, 'using double click')
-        // Prevent text tool activation
-        e.preventDefault()
-        e.stopPropagation()
-        return
-      }
-
       if (segmentInfo) {
-        console.log('[BezierEditModeHandler] Clicked on segment', segmentInfo.segmentIndex, 'altKey:', e.altKey)
+        console.log('[BezierEditModeHandler] Clicked on segment', segmentInfo.segmentIndex, 'isDoubleClick:', isDoubleClick, 'altKey:', e.altKey)
+
+        if (isDoubleClick) {
+          console.log('[BezierEditModeHandler] DOUBLE-CLICK on segment - adding point')
+          const updatedShape = BezierState.addPointToSegment(
+            editingShape,
+            segmentInfo.segmentIndex,
+            segmentInfo.t
+          )
+          const finalShape = BezierBounds.recalculateShapeBounds(
+            updatedShape,
+            updatedShape.props.points
+          )
+          editor.updateShape(finalShape)
+          bezierLog('PointAdd', 'New point added at segment', segmentInfo.segmentIndex, 'using double click')
+          // Prevent text tool activation
+          e.preventDefault()
+          e.stopPropagation()
+          return
+        }
 
         // Alt+drag to reshape segment
         if (e.altKey) {

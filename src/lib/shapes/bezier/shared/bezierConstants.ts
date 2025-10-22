@@ -8,15 +8,15 @@ export const BEZIER_DEBUG = false
 // Interaction thresholds (in pixels, will be scaled by zoom level)
 export const BEZIER_THRESHOLDS = {
   // Point selection/hover detection
-  ANCHOR_POINT: 5,
-  ANCHOR_POINT_HOVER: 7,
-  CONTROL_POINT: 5,
-  
+  ANCHOR_POINT: 10, // Increased from 5 for more reliable clicking
+  ANCHOR_POINT_HOVER: 12, // Increased from 7
+  CONTROL_POINT: 8, // Increased from 5
+
   // Segment interaction
   SEGMENT_HOVER: 8,
   SEGMENT_CLICK: 10,
   PATH_SEGMENT: 10,
-  SEGMENT_ANCHOR_EXCLUSION: 12, // Don't show segment hover near anchors
+  SEGMENT_ANCHOR_EXCLUSION: 15, // Increased from 12 - Don't show segment hover near anchors
   
   // Snap behavior for closing curves
   SNAP_TO_START: 12,
