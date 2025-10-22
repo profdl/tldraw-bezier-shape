@@ -1,11 +1,13 @@
 import {
-  HTMLContainer,
+  SVGContainer,
+  SvgExportContext,
   T,
+  TLShapeUtilCanvasSvgDef,
   type TLBaseShape,
   type RecordProps,
   type TLHandle,
   type TLResizeInfo,
-  type TLShapePartial
+  type TLShapePartial,
 } from 'tldraw'
 import {
   type TLDefaultColorStyle,
@@ -24,13 +26,15 @@ import {
   generateBezierHandles,
   createHandleMemoKey
 } from './utils/bezierUtils'
-import { BEZIER_STYLES, bezierLog } from './utils/bezierConstants'
-import { BezierPath } from './components/BezierPath'
+import { BEZIER_STYLES, bezierLog, STROKE_SIZES } from './utils/bezierConstants'
+import { BezierShapeSvg } from './components/BezierShapeSvg'
 import { BezierControlPoints } from './components/BezierControlPoints'
 import { BezierHoverPreview } from './components/BezierHoverPreview'
 import { LRUCache } from '../../utils/LRUCache'
 import { debugLog } from '../../utils/debug'
-import { bezierPointsToPath, bezierSegmentToPath } from './utils/bezierPathHelpers'
+import { bezierSegmentToPath } from './utils/bezierPathHelpers'
+import { getPathForBezierShape } from './utils/bezierPathBuilder'
+import { getFillDefForExport, getFillDefForCanvas } from './utils/fillDefs'
 
 /**
  * A point on a bezier curve with optional control points.
@@ -59,6 +63,7 @@ export type BezierShape = TLBaseShape<
     dash: TLDefaultDashStyle
     size: TLDefaultSizeStyle
     fill: TLDefaultFillStyle
+    scale: number
     points: BezierPoint[]
     isClosed: boolean
     holeRings?: BezierPoint[][]
@@ -86,6 +91,7 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
     dash: DefaultDashStyle,
     size: DefaultSizeStyle,
     fill: DefaultFillStyle,
+    scale: T.number,
     points: T.arrayOf(T.object({
       x: T.number,
       y: T.number,
@@ -133,6 +139,7 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
     return {
       w: 1,
       h: 1,
+      scale: 1,
       points: [],
       isClosed: false,
       ...this.getCommonDefaultProps(),
@@ -140,76 +147,43 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
   }
 
   override component(shape: BezierShape) {
-    const { points, color, dash, size, fill, isClosed, editMode, selectedPointIndices = [], selectedSegmentIndex, hoverPoint, holeRings } = shape.props
+    const { points, editMode, selectedPointIndices = [], selectedSegmentIndex, hoverPoint, isClosed } = shape.props
 
-    // Note: This is a class component following TLDraw's ShapeUtil pattern
-    // FUTURE CONSIDERATION: Could potentially refactor to functional component if more hook usage is needed
-    // Current architecture follows TLDraw best practices for custom shape utilities
-
-    // Convert points to SVG path (only if we have 2+ points)
-    let pathData = points.length >= 2 ? bezierPointsToPath(points, isClosed) : ''
-
-    // Add hole rings as additional sub-paths (they will create holes with evenodd fill-rule)
-    if (holeRings && holeRings.length > 0) {
-      for (const holeRing of holeRings) {
-        if (holeRing.length >= 2) {
-          // Append hole ring as a separate sub-path (starts with M command)
-          pathData += ' ' + bezierPointsToPath(holeRing, true)
-        }
-      }
-    }
-
-    const selectedSegmentPath = typeof selectedSegmentIndex === 'number'
-      ? bezierSegmentToPath(points, selectedSegmentIndex, isClosed)
-      : ''
-
+    // Render using tldraw's native PathBuilder system
     return (
-      <HTMLContainer style={{ cursor: 'default' }}>
-        <svg
-          width={shape.props.w}
-          height={shape.props.h}
-          style={{ overflow: 'visible' }}
-        >
-          {/* Main bezier path */}
-          <BezierPath
-            pathData={pathData}
-            color={color}
-            dash={dash}
-            size={size}
-            fill={fill}
-            isClosed={isClosed}
-            editMode={!!editMode}
-          />
+      <>
+        <SVGContainer>
+          <BezierShapeSvg shape={shape} shouldScale={true} />
 
-          {/* Highlight a selected segment when editing */}
-          {editMode && selectedSegmentPath && (
-            <path
-              d={selectedSegmentPath}
-              fill="none"
-              stroke={BEZIER_STYLES.SEGMENT_HIGHLIGHT_COLOR}
-              strokeWidth={BEZIER_STYLES.SEGMENT_HIGHLIGHT_WIDTH}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity={BEZIER_STYLES.SEGMENT_HIGHLIGHT_OPACITY}
-              strokeDasharray={BEZIER_STYLES.SEGMENT_HIGHLIGHT_DASH}
-            />
-          )}
-          
-          {/* Show control points and hover preview when in edit mode only */}
+          {/* Edit mode overlays (rendered in edit mode only) */}
           {editMode && (
             <>
+              {/* Highlight selected segment */}
+              {typeof selectedSegmentIndex === 'number' && (
+                <path
+                  d={bezierSegmentToPath(points, selectedSegmentIndex, isClosed)}
+                  fill="none"
+                  stroke={BEZIER_STYLES.SEGMENT_HIGHLIGHT_COLOR}
+                  strokeWidth={BEZIER_STYLES.SEGMENT_HIGHLIGHT_WIDTH}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={BEZIER_STYLES.SEGMENT_HIGHLIGHT_OPACITY}
+                  strokeDasharray={BEZIER_STYLES.SEGMENT_HIGHLIGHT_DASH}
+                />
+              )}
+
               {/* Hover preview for Alt+click point addition */}
               <BezierHoverPreview hoverPoint={hoverPoint} />
-              
+
               {/* Control points and anchor points */}
-              <BezierControlPoints 
+              <BezierControlPoints
                 points={points}
                 selectedPointIndices={selectedPointIndices}
               />
             </>
           )}
-        </svg>
-      </HTMLContainer>
+        </SVGContainer>
+      </>
     )
   }
 
@@ -218,8 +192,20 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
     if (shape.props.editMode) {
       return null
     }
-    // Show minimal indicator in normal mode
-    return <rect width={shape.props.w} height={shape.props.h} fill="none" stroke="transparent" />
+
+    // Use PathBuilder for indicator, following tldraw's native pattern
+    const path = getPathForBezierShape(shape)
+    const strokeWidth = STROKE_SIZES[shape.props.size] * shape.props.scale
+
+    return path.toSvg({
+      style: shape.props.dash === 'draw' ? 'draw' : 'solid',
+      strokeWidth: 1,
+      passes: 1,
+      randomSeed: shape.id,
+      offset: 0,
+      roundness: strokeWidth * 2,
+      props: { strokeWidth: undefined },
+    })
   }
 
   getBounds(shape: BezierShape) {
@@ -239,6 +225,28 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
   getOutline(shape: BezierShape) {
     // Use BezierBounds service for outline points
     return BezierBounds.getOutlinePoints(shape)
+  }
+
+  getGeometry(shape: BezierShape) {
+    // Use PathBuilder's native geometry system
+    return getPathForBezierShape(shape).toGeometry()
+  }
+
+  override toSvg(shape: BezierShape, ctx: SvgExportContext) {
+    // Add fill definitions for export
+    ctx.addExportDef(getFillDefForExport(shape.props.fill))
+
+    const scale = shape.props.scale
+
+    return (
+      <g transform={`scale(${1/scale})`}>
+        <BezierShapeSvg shape={shape} shouldScale={false} forceSolid={false} />
+      </g>
+    )
+  }
+
+  override getCanvasSvgDefs(): TLShapeUtilCanvasSvgDef[] {
+    return [getFillDefForCanvas()]
   }
 
   // LRU cache for handle generation performance optimization

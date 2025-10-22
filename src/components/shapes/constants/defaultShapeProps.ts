@@ -6,4 +6,5 @@ export const DEFAULT_SHAPE_PROPS = {
   dash: 'solid' as const,
   size: 'm' as const,
   fill: 'none' as const,
+  scale: 1 as const,
 }

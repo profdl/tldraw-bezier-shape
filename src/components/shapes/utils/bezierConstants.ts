@@ -86,6 +86,17 @@ export const BEZIER_HANDLES = {
 } as const
 
 /**
+ * Stroke size mapping following tldraw's native pattern.
+ * Maps size style to stroke width in pixels.
+ */
+export const STROKE_SIZES = {
+  s: 2,
+  m: 3.5,
+  l: 5,
+  xl: 10,
+} as const
+
+/**
  * Timing constants for interaction behavior.
  *
  * These control the temporal aspects of user interactions like double-clicks
