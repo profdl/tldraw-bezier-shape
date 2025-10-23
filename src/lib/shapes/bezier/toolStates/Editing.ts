@@ -229,57 +229,11 @@ export class Editing extends StateNode {
 	private updateSegmentDrag(shape: BezierShape, localPoint: { x: number; y: number }) {
 		if (!this.segmentDrag) return
 
-		const { initialLocalPoint, initialPoints, segmentIndex, isClosed } = this.segmentDrag
+		const { initialLocalPoint, initialPoints, segmentIndex } = this.segmentDrag
 		const delta = Vec.Sub(new Vec(localPoint.x, localPoint.y), initialLocalPoint)
 
-		if (initialPoints.length < 2) return
-
-		const startIndex = Math.min(segmentIndex, initialPoints.length - 1)
-		const endIndex =
-			isClosed && startIndex === initialPoints.length - 1
-				? 0
-				: Math.min(startIndex + 1, initialPoints.length - 1)
-
-		const startInitial = initialPoints[startIndex]
-		const endInitial = initialPoints[endIndex]
-		if (!startInitial || !endInitial) return
-
-		const updatedPoints = initialPoints.map((p) => ({
-			x: p.x,
-			y: p.y,
-			cp1: p.cp1 ? { ...p.cp1 } : undefined,
-			cp2: p.cp2 ? { ...p.cp2 } : undefined,
-		}))
-
-		const startPoint = { ...updatedPoints[startIndex] }
-		const endPoint = { ...updatedPoints[endIndex] }
-
-		const baseStartHandle = startInitial.cp2 ? { ...startInitial.cp2 } : { x: startInitial.x, y: startInitial.y }
-		const baseEndHandle = endInitial.cp1 ? { ...endInitial.cp1 } : { x: endInitial.x, y: endInitial.y }
-
-		startPoint.cp2 = {
-			x: baseStartHandle.x + delta.x,
-			y: baseStartHandle.y + delta.y,
-		}
-
-		endPoint.cp1 = {
-			x: baseEndHandle.x + delta.x,
-			y: baseEndHandle.y + delta.y,
-		}
-
-		updatedPoints[startIndex] = startPoint
-		updatedPoints[endIndex] = endPoint
-
-		const updatedShape: BezierShape = {
-			...shape,
-			props: {
-				...shape.props,
-				points: updatedPoints,
-				selectedSegmentIndex: segmentIndex,
-				selectedPointIndices: [],
-			},
-		}
-
+		// Use centralized segment drag function from BezierState
+		const updatedShape = BezierState.updateSegmentDrag(shape, segmentIndex, initialPoints, delta)
 		this.editor.updateShape(updatedShape)
 	}
 

@@ -1,4 +1,5 @@
 import {
+  BaseBoxShapeUtil,
   SVGContainer,
   SvgExportContext,
   TLShapeUtilCanvasSvgDef,
@@ -6,7 +7,6 @@ import {
   type TLResizeInfo,
   type TLShapePartial,
 } from '@tldraw/editor'
-import { FlippableShapeUtil } from './shared/FlippableShapeUtil'
 import { BezierBounds } from './shared/bezierBounds'
 import { BezierState, BezierStateActions } from './shared/bezierState'
 import {
@@ -34,7 +34,7 @@ import {
  *
  * @public
  */
-export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
+export class BezierShapeUtil extends BaseBoxShapeUtil<BezierShape> {
   static override type = 'bezier' as const
   static override props = bezierShapeProps
   static override migrations = bezierShapeMigrations
@@ -268,43 +268,6 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
     // Use BezierBounds service for consistent bounds calculation
     return BezierBounds.recalculateShapeBounds(shape, newPoints)
   }
-
-  // Custom flip behavior for Bezier curves
-  protected override onFlipCustom(
-    shape: BezierShape,
-    direction: 'horizontal' | 'vertical',
-    isFlippedX: boolean,
-    isFlippedY: boolean
-  ): BezierShape {
-    debugLog('BezierFlip', 'onFlipCustom', {
-      shapeId: shape.id,
-      direction,
-      isFlippedX,
-      isFlippedY,
-    })
-
-    const scaleX = direction === 'horizontal' ? -1 : 1
-    const scaleY = direction === 'vertical' ? -1 : 1
-
-    const transformedPoints = this.transformPointsWithScale(
-      this.cloneBezierPoints(shape.props.points),
-      {
-        scaleX,
-        scaleY,
-        targetWidth: shape.props.w,
-        targetHeight: shape.props.h,
-      }
-    )
-
-    return {
-      ...shape,
-      props: {
-        ...shape.props,
-        points: transformedPoints
-      }
-    }
-  }
-
 
   // Pointer down handler for edit mode interactions
   onPointerDown = (shape: BezierShape) => {

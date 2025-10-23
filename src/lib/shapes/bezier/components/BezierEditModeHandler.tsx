@@ -359,53 +359,9 @@ export function BezierEditModeHandler() {
 
       const delta = Vec.Sub(new Vec(localPoint.x, localPoint.y), drag.initialLocalPoint)
 
-      if (drag.initialPoints.length < 2) return
-
-      const startIndex = Math.min(drag.segmentIndex, drag.initialPoints.length - 1)
-      const endIndex =
-        drag.isClosed && startIndex === drag.initialPoints.length - 1
-          ? 0
-          : Math.min(startIndex + 1, drag.initialPoints.length - 1)
-
-      const startInitial = drag.initialPoints[startIndex]
-      const endInitial = drag.initialPoints[endIndex]
-      if (!startInitial || !endInitial) return
-
-      const updatedPoints = drag.initialPoints.map((p: BezierPoint) => ({
-        x: p.x,
-        y: p.y,
-        cp1: p.cp1 ? { ...p.cp1 } : undefined,
-        cp2: p.cp2 ? { ...p.cp2 } : undefined,
-      }))
-
-      const startPoint = { ...updatedPoints[startIndex] }
-      const endPoint = { ...updatedPoints[endIndex] }
-
-      const baseStartHandle = startInitial.cp2 ? { ...startInitial.cp2 } : { x: startInitial.x, y: startInitial.y }
-      const baseEndHandle = endInitial.cp1 ? { ...endInitial.cp1 } : { x: endInitial.x, y: endInitial.y }
-
-      startPoint.cp2 = {
-        x: baseStartHandle.x + delta.x,
-        y: baseStartHandle.y + delta.y,
-      }
-
-      endPoint.cp1 = {
-        x: baseEndHandle.x + delta.x,
-        y: baseEndHandle.y + delta.y,
-      }
-
-      updatedPoints[startIndex] = startPoint
-      updatedPoints[endIndex] = endPoint
-
-      editor.updateShape({
-        ...shape,
-        props: {
-          ...shape.props,
-          points: updatedPoints,
-          selectedSegmentIndex: drag.segmentIndex,
-          selectedPointIndices: [],
-        },
-      })
+      // Use centralized segment drag function from BezierState
+      const updatedShape = BezierState.updateSegmentDrag(shape, drag.segmentIndex, drag.initialPoints, delta)
+      editor.updateShape(updatedShape)
 
       bezierLog('EditMode', 'Segment drag update, delta:', delta)
     }
