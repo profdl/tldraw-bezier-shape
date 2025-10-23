@@ -164,7 +164,7 @@ export class Creating extends StateNode {
 
     // If we're entering from a canvas click, immediately create the first point
     if (info.target === 'canvas') {
-      const point = this.editor.inputs.currentPagePoint.clone()
+      const point = new Vec(info.point.x, info.point.y)
 
       // Create shape ID and history mark for new shape
       if (!this.markId) {
@@ -180,9 +180,9 @@ export class Creating extends StateNode {
     } else {
       // Fallback - defer first point creation for other entry scenarios
       this.isCreatingFirstPoint = true
-      const point = this.editor.inputs.currentPagePoint.clone()
-      this.startPoint = point.clone()
-      this.currentPoint = point.clone()
+      const point = new Vec(info.point?.x ?? 0, info.point?.y ?? 0)
+      this.startPoint = point
+      this.currentPoint = point
       this.dragDistance = 0
     }
   }
