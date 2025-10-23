@@ -49,7 +49,7 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
   }
 
   override component(shape: BezierShape) {
-    const { points, editMode, selectedPointIndices = [], selectedSegmentIndex, isClosed } = shape.props
+    const { points, editMode, selectedPointIndices = [], selectedSegmentIndex, isClosed, scale = 1 } = shape.props
 
     // Render using tldraw's native PathBuilder system
     return (
@@ -70,6 +70,7 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
                   strokeLinejoin="round"
                   opacity={BEZIER_STYLES.SEGMENT_HIGHLIGHT_OPACITY}
                   strokeDasharray={BEZIER_STYLES.SEGMENT_HIGHLIGHT_DASH}
+                  transform={`scale(${1 / scale})`}
                 />
               )}
               <BezierControlPoints points={points} selectedPointIndices={selectedPointIndices} />
