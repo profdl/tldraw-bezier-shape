@@ -1,5 +1,5 @@
 import React from 'react'
-import { useEditor } from '@tldraw/tldraw'
+import { useEditor, useValue } from '@tldraw/editor'
 import { type BezierPoint } from '../shared/bezierShape'
 import { BEZIER_STYLES, BEZIER_THRESHOLDS } from '../shared/bezierConstants'
 
@@ -17,17 +17,18 @@ export const BezierControlPoints: React.FC<BezierControlPointsProps> = ({
   selectedPointIndices
 }) => {
   const editor = useEditor()
-  const zoom = editor.getZoomLevel()
+  const zoom = useValue('bezier control zoom', () => editor.getZoomLevel(), [editor])
+  const safeZoom = zoom <= 0 ? 1 : zoom
 
   // Calculate zoom-compensated sizes to maintain consistent screen size
-  const anchorRadius = BEZIER_THRESHOLDS.ANCHOR_RADIUS / zoom
-  const anchorRadiusSelected = BEZIER_THRESHOLDS.ANCHOR_RADIUS_SELECTED / zoom
-  const controlRadius = BEZIER_THRESHOLDS.CONTROL_RADIUS / zoom
-  const controlRadiusSelected = BEZIER_THRESHOLDS.CONTROL_RADIUS_SELECTED / zoom
+  const anchorRadius = BEZIER_THRESHOLDS.ANCHOR_RADIUS / safeZoom
+  const anchorRadiusSelected = BEZIER_THRESHOLDS.ANCHOR_RADIUS_SELECTED / safeZoom
+  const controlRadius = BEZIER_THRESHOLDS.CONTROL_RADIUS / safeZoom
+  const controlRadiusSelected = BEZIER_THRESHOLDS.CONTROL_RADIUS_SELECTED / safeZoom
 
-  const controlLineWidth = BEZIER_STYLES.CONTROL_LINE_WIDTH / zoom
-  const anchorStrokeWidth = BEZIER_STYLES.ANCHOR_STROKE / zoom
-  const controlStrokeWidth = BEZIER_STYLES.CONTROL_STROKE / zoom
+  const controlLineWidth = BEZIER_STYLES.CONTROL_LINE_WIDTH / safeZoom
+  const anchorStrokeWidth = BEZIER_STYLES.ANCHOR_STROKE / safeZoom
+  const controlStrokeWidth = BEZIER_STYLES.CONTROL_STROKE / safeZoom
 
   return (
     <g opacity={BEZIER_STYLES.CONTROL_OPACITY}>
