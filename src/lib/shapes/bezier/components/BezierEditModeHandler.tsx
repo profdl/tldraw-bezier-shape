@@ -71,17 +71,7 @@ export function BezierEditModeHandler() {
       const shapePageBounds = editor.getShapePageBounds(editingShape.id)
       if (!shapePageBounds) return
 
-      // Check if click is outside the shape bounds (with padding) - exit edit mode
-      // Add padding to prevent accidental exits when clicking points at the edge
       const zoom = editor.getZoomLevel()
-      const padding = BEZIER_BOUNDS.EDIT_MODE_EXIT_PADDING / zoom
-      const paddedBounds = shapePageBounds.clone().expand(padding)
-
-      if (!paddedBounds.containsPoint(pagePoint)) {
-        console.log('[BezierEditModeHandler] Click outside shape bounds, exiting edit mode')
-        BezierStateActions.exitEditMode(editor, editingShape)
-        return
-      }
 
       const localPoint = {
         x: pagePoint.x - shapePageBounds.x,
@@ -112,7 +102,20 @@ export function BezierEditModeHandler() {
       lastClickTimeRef.current = now
       lastClickPositionRef.current = currentPosition
 
-      // Check if clicking on an anchor point FIRST (higher priority than segments)
+      // Check if clicking on a control point FIRST (handles outside bounds)
+      const controlPoint = BezierState.getControlPointAt(
+        editingShape.props.points,
+        localPoint,
+        zoom
+      )
+
+      if (controlPoint) {
+        console.log('[BezierEditModeHandler] Clicked on control point', controlPoint)
+        // Let tldraw's handle system manage control point dragging
+        return
+      }
+
+      // Check if clicking on an anchor point (higher priority than segments)
       const anchorIndex = BezierState.getAnchorPointAt(
         editingShape.props.points,
         localPoint,
@@ -173,32 +176,38 @@ export function BezierEditModeHandler() {
           return
         }
 
-        // Alt+drag to reshape segment
-        if (e.altKey) {
-          console.log('[BezierEditModeHandler] Starting segment drag')
-          segmentDragRef.current = {
-            shapeId: editingShape.id,
-            segmentIndex: segmentInfo.segmentIndex,
-            initialLocalPoint: new Vec(localPoint.x, localPoint.y),
-            initialPoints: editingShape.props.points.map((p) => ({
-              x: p.x,
-              y: p.y,
-              cp1: p.cp1 ? { ...p.cp1 } : undefined,
-              cp2: p.cp2 ? { ...p.cp2 } : undefined,
-            })),
-            isClosed: editingShape.props.isClosed,
-          }
-          BezierStateActions.selectSegment(editor, editingShape, segmentInfo.segmentIndex)
-          editor.setCursor({ type: 'grabbing' })
-          // Prevent shape from being dragged
-          e.preventDefault()
-          e.stopPropagation()
-          return
+        // Drag to reshape segment
+        console.log('[BezierEditModeHandler] Starting segment drag')
+        segmentDragRef.current = {
+          shapeId: editingShape.id,
+          segmentIndex: segmentInfo.segmentIndex,
+          initialLocalPoint: new Vec(localPoint.x, localPoint.y),
+          initialPoints: editingShape.props.points.map((p) => ({
+            x: p.x,
+            y: p.y,
+            cp1: p.cp1 ? { ...p.cp1 } : undefined,
+            cp2: p.cp2 ? { ...p.cp2 } : undefined,
+          })),
+          isClosed: editingShape.props.isClosed,
         }
-
-        // Regular click - just select
         BezierStateActions.selectSegment(editor, editingShape, segmentInfo.segmentIndex)
+        editor.setCursor({ type: 'grabbing' })
+        // Prevent shape from being dragged
+        e.preventDefault()
+        e.stopPropagation()
         return
+      }
+
+      // Click not on any anchor or segment - check if outside bounds to exit edit mode
+      const padding = BEZIER_BOUNDS.EDIT_MODE_EXIT_PADDING / zoom
+      const paddedBounds = shapePageBounds.clone().expand(padding)
+
+      if (!paddedBounds.containsPoint(pagePoint)) {
+        console.log('[BezierEditModeHandler] Click outside shape bounds, exiting edit mode')
+        BezierStateActions.exitEditMode(editor, editingShape)
+      } else {
+        console.log('[BezierEditModeHandler] Click inside bounds but not on shape element, exiting edit mode')
+        BezierStateActions.exitEditMode(editor, editingShape)
       }
     }
 
