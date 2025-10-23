@@ -70,13 +70,12 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
                   d={bezierSegmentToPath(points, selectedSegmentIndex, isClosed)}
                   fill="none"
                   stroke={BEZIER_STYLES.SEGMENT_HIGHLIGHT_COLOR}
-                  strokeWidth={BEZIER_STYLES.SEGMENT_HIGHLIGHT_WIDTH * scale}
+                  strokeWidth={BEZIER_STYLES.SEGMENT_HIGHLIGHT_WIDTH}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   opacity={BEZIER_STYLES.SEGMENT_HIGHLIGHT_OPACITY}
                   strokeDasharray={BEZIER_STYLES.SEGMENT_HIGHLIGHT_DASH}
                   transform={`scale(${1 / scale})`}
-                  vectorEffect="non-scaling-stroke"
                 />
               )}
               <BezierControlPoints points={points} selectedPointIndices={selectedPointIndices} />
