@@ -287,7 +287,7 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
 
 
   // Pointer down handler for edit mode interactions
-  override onPointerDown = (shape: BezierShape) => {
+  onPointerDown = (shape: BezierShape) => {
     bezierLog('Interaction', 'onPointerDown called', {
       shapeId: shape.id,
       editMode: shape.props.editMode,

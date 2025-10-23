@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useEditor } from '@tldraw/tldraw'
 import { Vec, type TLShapeId } from '@tldraw/editor'
 import { type BezierShape, type BezierPoint } from '../shared/bezierShape'
@@ -45,12 +45,22 @@ export function BezierEditModeHandler() {
   const DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
   const DOUBLE_CLICK_DISTANCE = 8 // pixels
 
+  const getEditingShape = useCallback((): BezierShape | undefined => {
+    for (const shape of editor.getCurrentPageShapes()) {
+      if (shape.type === 'bezier') {
+        const candidate = shape as BezierShape
+        if (candidate.props.editMode) {
+          return candidate
+        }
+      }
+    }
+    return undefined
+  }, [editor])
+
   // Listen for tool changes and selection changes to exit edit mode
   useEffect(() => {
     const handleStoreChange = () => {
-      const editingShape = editor.getCurrentPageShapes().find(
-        (shape) => shape.type === 'bezier' && shape.props.editMode
-      ) as BezierShape | undefined
+      const editingShape = getEditingShape()
 
       if (!editingShape) return
 
@@ -78,16 +88,55 @@ export function BezierEditModeHandler() {
       source: 'user',
       scope: 'all',
     })
-  }, [editor])
+  }, [editor, getEditingShape])
+
+  useEffect(() => {
+    const container = editor.getContainer()
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' && event.key !== 'Backspace') {
+        return
+      }
+
+      const editingShape = getEditingShape()
+
+      if (!editingShape) {
+        return
+      }
+
+      const selectedIndices = editingShape.props.selectedPointIndices || []
+      if (selectedIndices.length === 0) {
+        return
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      const beforeCount = editingShape.props.points.length
+      const afterShape = BezierStateActions.deleteSelectedPoints(editor, editingShape)
+      const afterCount = afterShape.props.points.length
+
+      bezierLog('Delete', 'Keydown handler removed points', {
+        beforeCount,
+        afterCount,
+        selectedIndices,
+        preventedShapeDelete: true,
+      })
+    }
+
+    container.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      container.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [editor, getEditingShape])
 
   useEffect(() => {
     const container = editor.getContainer()
 
     const handlePointerDown = (e: PointerEvent) => {
       // Find the bezier shape currently in edit mode
-      const editingShape = editor.getCurrentPageShapes().find(
-        (shape) => shape.type === 'bezier' && shape.props.editMode
-      ) as BezierShape | undefined
+      const editingShape = getEditingShape()
 
       if (!editingShape) {
         console.log('[BezierEditModeHandler] No shape in edit mode')
@@ -296,7 +345,7 @@ export function BezierEditModeHandler() {
       const endInitial = drag.initialPoints[endIndex]
       if (!startInitial || !endInitial) return
 
-      const updatedPoints = drag.initialPoints.map((p) => ({
+      const updatedPoints = drag.initialPoints.map((p: BezierPoint) => ({
         x: p.x,
         y: p.y,
         cp1: p.cp1 ? { ...p.cp1 } : undefined,

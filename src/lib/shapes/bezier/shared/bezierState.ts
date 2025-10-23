@@ -2,6 +2,7 @@ import { type Editor, type TLHandle } from '@tldraw/editor'
 import { type BezierPoint, type BezierShape } from './bezierShape'
 import { BezierMath } from './bezierMath'
 import { BEZIER_THRESHOLDS, bezierLog } from './bezierConstants'
+import { BezierBounds } from './bezierBounds'
 import { parseHandleId } from './bezierHandleUtils'
 
 /**
@@ -620,6 +621,20 @@ export const BezierStateActions = {
       editor.updateShape(updatedShape)
     }
     return updatedShape
+  },
+
+  deleteSelectedPoints(editor: Editor, shape: BezierShape) {
+    const updatedShape = BezierState.deleteSelectedPoints(shape)
+    if (updatedShape === shape) {
+      return shape
+    }
+
+    const normalizedShape = BezierBounds.recalculateShapeBounds(
+      updatedShape,
+      updatedShape.props.points
+    )
+    editor.updateShape(normalizedShape)
+    return normalizedShape
   },
 
   togglePointType(editor: Editor, shape: BezierShape, pointIndex: number) {
