@@ -169,7 +169,23 @@ export const bezierShapeMigrations = createShapePropsMigrationSequence({
 })
 
 /** @public */
-export function getDefaultBezierProps(): BezierShapeProps {
+export function getDefaultBezierProps(editor?: import('@tldraw/editor').Editor): BezierShapeProps {
+	// Use current style selections if editor is provided, otherwise use hardcoded defaults
+	if (editor) {
+		return {
+			w: 1,
+			h: 1,
+			color: editor.getStyleForNextShape(DefaultColorStyle),
+			dash: editor.getStyleForNextShape(DefaultDashStyle),
+			size: editor.getStyleForNextShape(DefaultSizeStyle),
+			fill: editor.getStyleForNextShape(DefaultFillStyle),
+			scale: 1,
+			points: [],
+			isClosed: false,
+		}
+	}
+
+	// Fallback to defaults when editor is not available
 	return {
 		w: 1,
 		h: 1,

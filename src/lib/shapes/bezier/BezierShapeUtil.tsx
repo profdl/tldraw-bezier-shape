@@ -71,7 +71,7 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
   private readonly DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
 
   override getDefaultProps(): BezierShape['props'] {
-    return getDefaultBezierProps()
+    return getDefaultBezierProps(this.editor)
   }
 
   override component(shape: BezierShape) {

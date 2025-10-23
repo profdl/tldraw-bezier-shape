@@ -6,14 +6,13 @@ import {
   Vec,
   type TLShapePartial,
 } from '@tldraw/editor'
-import { type BezierShape, type BezierPoint } from '../shared/bezierShape'
+import { type BezierShape, type BezierPoint, getDefaultBezierProps } from '../shared/bezierShape'
 import {
   BEZIER_THRESHOLDS,
   BEZIER_HANDLES,
   BEZIER_TIMING,
   BEZIER_BOUNDS
 } from '../shared/bezierConstants'
-import { DEFAULT_SHAPE_PROPS } from '../shared/defaultShapeProps'
 import { useTransientShapeStore } from '../../../../store/transientShapeStore'
 
 interface DragHandleOptions {
@@ -602,6 +601,9 @@ export class Creating extends StateNode {
     // Determine edit mode state
     const editMode = forceEditMode !== undefined ? forceEditMode : !isClosed
 
+    // Get default style props using current editor styles
+    const defaultProps = getDefaultBezierProps(this.editor)
+
     // Build shape partial
     const partial: TLShapePartial<BezierShape> = {
       id: this.shapeId,
@@ -614,7 +616,11 @@ export class Creating extends StateNode {
         points: bounds.normalizedPoints,
         isClosed,
         editMode,
-        ...DEFAULT_SHAPE_PROPS,
+        color: defaultProps.color,
+        dash: defaultProps.dash,
+        size: defaultProps.size,
+        fill: defaultProps.fill,
+        scale: defaultProps.scale,
       },
     }
 
