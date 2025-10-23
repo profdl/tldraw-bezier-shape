@@ -170,12 +170,15 @@ export class Creating extends StateNode {
         this.markId = this.editor.markHistoryStoppingPoint(`creating_bezier:${this.shapeId}`)
       }
 
-      this.addPoint({ x: point.x, y: point.y })
+      // Set drag state BEFORE adding point so initial render includes drag state
       this.isDragging = true
       this.startPoint = point.clone()
       this.currentPoint = point.clone()
       this.dragDistance = 0
       this.initialDragOccurred = false
+
+      // Now add the point - this will call updateShape() with isDragging = true
+      this.addPoint({ x: point.x, y: point.y })
     } else {
       // Fallback - defer first point creation for other entry scenarios
       this.isCreatingFirstPoint = true
