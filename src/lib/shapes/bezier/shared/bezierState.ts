@@ -270,9 +270,9 @@ export class BezierState {
     shape: BezierShape,
     pointIndex: number
   ): BezierShape {
-    console.log('[BezierState] togglePointType called for point', pointIndex)
+    bezierLog('PointType', 'togglePointType called for point', pointIndex)
     if (pointIndex < 0 || pointIndex >= shape.props.points.length) {
-      console.log('[BezierState] togglePointType: invalid index', pointIndex)
+      bezierLog('PointType', 'togglePointType: invalid index', pointIndex)
       return shape
     }
 
@@ -281,7 +281,7 @@ export class BezierState {
 
     // Check if the point currently has control points (smooth) or not (corner)
     const hasControlPoints = point.cp1 || point.cp2
-    console.log('[BezierState] togglePointType: point has control points?', hasControlPoints, 'cp1:', point.cp1, 'cp2:', point.cp2)
+    bezierLog('PointType', 'point has control points?', hasControlPoints)
 
     if (hasControlPoints) {
       // Convert smooth point to corner point (remove control points)
@@ -289,7 +289,6 @@ export class BezierState {
         x: point.x,
         y: point.y,
       }
-      console.log('[BezierState] togglePointType: Converted to corner point:', pointIndex)
       bezierLog('PointType', 'Converted to corner point:', pointIndex)
     } else {
       // Convert corner point to smooth point (add control points)
@@ -303,9 +302,8 @@ export class BezierState {
       const prevPoint = prevIndex >= 0 ? shape.props.points[prevIndex] : null
       const nextPoint = nextIndex >= 0 ? shape.props.points[nextIndex] : null
 
-      console.log('[BezierState] togglePointType: Creating smooth control points with prev:', prevPoint, 'next:', nextPoint)
+      bezierLog('PointType', 'Creating smooth control points')
       const controlPoints = BezierMath.createSmoothControlPoints(prevPoint, point, nextPoint)
-      console.log('[BezierState] togglePointType: Created control points:', controlPoints)
 
       newPoints[pointIndex] = {
         x: point.x,
@@ -313,7 +311,6 @@ export class BezierState {
         cp1: controlPoints.cp1,
         cp2: controlPoints.cp2,
       }
-      console.log('[BezierState] togglePointType: Converted to smooth point:', pointIndex, newPoints[pointIndex])
       bezierLog('PointType', 'Converted to smooth point:', pointIndex)
     }
 
@@ -325,7 +322,6 @@ export class BezierState {
         selectedSegmentIndex: undefined,
       }
     }
-    console.log('[BezierState] togglePointType: Returning updated shape')
     return updatedShape
   }
 
@@ -389,20 +385,19 @@ export class BezierState {
     zoomLevel: number
   ): number {
     const threshold = BEZIER_THRESHOLDS.ANCHOR_POINT / zoomLevel
-    console.log('[BezierState] getAnchorPointAt: checking', points.length, 'points with threshold', threshold)
+    bezierLog('HitTest', 'getAnchorPointAt: checking', points.length, 'points with threshold', threshold)
 
     for (let i = 0; i < points.length; i++) {
       const point = points[i]
       const distance = BezierMath.getDistance(localPoint, point)
-      console.log('[BezierState] getAnchorPointAt: point', i, 'at', point, 'distance', distance, 'threshold', threshold)
 
       if (distance < threshold) {
-        console.log('[BezierState] getAnchorPointAt: Found anchor at index', i)
+        bezierLog('HitTest', 'Found anchor at index', i, 'distance', distance)
         return i
       }
     }
-    console.log('[BezierState] getAnchorPointAt: No anchor found')
-    
+    bezierLog('HitTest', 'No anchor found')
+
     return -1
   }
 
@@ -454,7 +449,7 @@ export class BezierState {
     for (const point of points) {
       const distanceToAnchor = BezierMath.getDistance(localPoint, point)
       if (distanceToAnchor < anchorExclusionRadius) {
-        console.log('[BezierState] getSegmentAtPosition: Too close to anchor point, excluding segment hit')
+        bezierLog('HitTest', 'getSegmentAtPosition: Too close to anchor point, excluding segment hit')
         return null
       }
     }

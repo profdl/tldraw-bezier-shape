@@ -43,8 +43,35 @@ const components: TLComponents = {
     const isBezierSelected = useIsToolSelected(tools['bezier'])
     return (
       <DefaultToolbar {...props}>
+        <TldrawUiMenuItem {...tools['select']} isSelected={useIsToolSelected(tools['select'])} />
+        <TldrawUiMenuItem {...tools['hand']} isSelected={useIsToolSelected(tools['hand'])} />
+        <TldrawUiMenuItem {...tools['draw']} isSelected={useIsToolSelected(tools['draw'])} />
+        <TldrawUiMenuItem {...tools['eraser']} isSelected={useIsToolSelected(tools['eraser'])} />
         <TldrawUiMenuItem {...tools['bezier']} isSelected={isBezierSelected} />
-        <DefaultToolbarContent />
+        <TldrawUiMenuItem {...tools['arrow']} isSelected={useIsToolSelected(tools['arrow'])} />
+        <TldrawUiMenuItem {...tools['text']} isSelected={useIsToolSelected(tools['text'])} />
+        <TldrawUiMenuItem {...tools['note']} isSelected={useIsToolSelected(tools['note'])} />
+        <TldrawUiMenuItem {...tools['asset']} isSelected={useIsToolSelected(tools['asset'])} />
+        <TldrawUiMenuItem {...tools['rectangle']} isSelected={useIsToolSelected(tools['rectangle'])} />
+        <TldrawUiMenuItem {...tools['ellipse']} isSelected={useIsToolSelected(tools['ellipse'])} />
+        <TldrawUiMenuItem {...tools['diamond']} isSelected={useIsToolSelected(tools['diamond'])} />
+        <TldrawUiMenuItem {...tools['triangle']} isSelected={useIsToolSelected(tools['triangle'])} />
+        <TldrawUiMenuItem {...tools['trapezoid']} isSelected={useIsToolSelected(tools['trapezoid'])} />
+        <TldrawUiMenuItem {...tools['rhombus']} isSelected={useIsToolSelected(tools['rhombus'])} />
+        <TldrawUiMenuItem {...tools['hexagon']} isSelected={useIsToolSelected(tools['hexagon'])} />
+        <TldrawUiMenuItem {...tools['cloud']} isSelected={useIsToolSelected(tools['cloud'])} />
+        <TldrawUiMenuItem {...tools['star']} isSelected={useIsToolSelected(tools['star'])} />
+        <TldrawUiMenuItem {...tools['oval']} isSelected={useIsToolSelected(tools['oval'])} />
+        <TldrawUiMenuItem {...tools['x-box']} isSelected={useIsToolSelected(tools['x-box'])} />
+        <TldrawUiMenuItem {...tools['check-box']} isSelected={useIsToolSelected(tools['check-box'])} />
+        <TldrawUiMenuItem {...tools['arrow-left']} isSelected={useIsToolSelected(tools['arrow-left'])} />
+        <TldrawUiMenuItem {...tools['arrow-up']} isSelected={useIsToolSelected(tools['arrow-up'])} />
+        <TldrawUiMenuItem {...tools['arrow-down']} isSelected={useIsToolSelected(tools['arrow-down'])} />
+        <TldrawUiMenuItem {...tools['arrow-right']} isSelected={useIsToolSelected(tools['arrow-right'])} />
+        <TldrawUiMenuItem {...tools['line']} isSelected={useIsToolSelected(tools['line'])} />
+        <TldrawUiMenuItem {...tools['highlight']} isSelected={useIsToolSelected(tools['highlight'])} />
+        <TldrawUiMenuItem {...tools['laser']} isSelected={useIsToolSelected(tools['laser'])} />
+        <TldrawUiMenuItem {...tools['frame']} isSelected={useIsToolSelected(tools['frame'])} />
       </DefaultToolbar>
     )
   },

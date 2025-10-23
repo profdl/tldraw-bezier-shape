@@ -661,9 +661,12 @@ export class Creating extends StateNode {
     
     this.editor.setCurrentTool('select')
     this.editor.setSelectedShapes([this.shapeId])
-    
-    // Force transform controls to update properly for the closed shape
-    // Small delay ensures TLDraw's selection state fully updates before refreshing
+
+    // TODO: [tldraw-handoff] Transform control workaround - review with tldraw team
+    // This setTimeout is used to force transform controls to update properly for the closed shape.
+    // Small delay ensures TLDraw's selection state fully updates before refreshing.
+    // Question for tldraw team: Is there a proper lifecycle hook or batch operation
+    // that can replace this setTimeout pattern? See also line 806 for similar usage.
     setTimeout(() => {
       this.editor.setSelectedShapes([])
       this.editor.setSelectedShapes([this.shapeId])
@@ -801,8 +804,11 @@ export class Creating extends StateNode {
     if (this.points.length >= 2) {
       this.editor.setSelectedShapes([this.shapeId])
 
-      // Force transform controls to initialize properly for the newly completed shape
-      // Minimal delay to ensure selection state propagates through TLDraw's update cycle
+      // TODO: [tldraw-handoff] Transform control workaround - review with tldraw team
+      // This setTimeout is used to force transform controls to initialize properly for the newly completed shape.
+      // Minimal delay to ensure selection state propagates through TLDraw's update cycle.
+      // Question for tldraw team: Is there a proper lifecycle hook or batch operation
+      // that can replace this setTimeout pattern? See also line 670 for similar usage.
       setTimeout(() => {
         this.editor.setSelectedShapes([])
         this.editor.setSelectedShapes([this.shapeId])

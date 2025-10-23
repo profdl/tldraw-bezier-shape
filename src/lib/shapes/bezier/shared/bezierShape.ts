@@ -20,7 +20,16 @@ export interface BezierPoint {
 	cp2?: { x: number; y: number }
 }
 
-/** @public */
+/**
+ * TODO: [tldraw-handoff] Edit mode storage pattern - review with tldraw team
+ * This shape stores edit mode state (editMode, selectedPointIndices, selectedSegmentIndex)
+ * directly in shape props rather than in tool state or editor state.
+ * Question for tldraw team: Is this pattern acceptable, or should we use a separate
+ * "editing tool" state to manage these UI concerns? Most tldraw shapes don't store
+ * interaction state in props.
+ *
+ * @public
+ */
 export interface BezierShapeProps {
 	w: number
 	h: number
