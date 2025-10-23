@@ -32,20 +32,32 @@ export function BezierEditModeHandler() {
   const DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
   const DOUBLE_CLICK_DISTANCE = 5 // pixels
 
-  // Listen for tool changes to exit edit mode
+  // Listen for tool changes and selection changes to exit edit mode
   useEffect(() => {
-    const handleToolChange = () => {
+    const handleStoreChange = () => {
       const editingShape = editor.getCurrentPageShapes().find(
         (shape) => shape.type === 'bezier' && shape.props.editMode
       ) as BezierShape | undefined
 
-      if (editingShape && editor.getCurrentToolId() !== 'select') {
+      if (!editingShape) return
+
+      // Exit edit mode if tool changed away from select
+      if (editor.getCurrentToolId() !== 'select') {
         console.log('[BezierEditModeHandler] Tool changed, exiting edit mode')
+        BezierStateActions.exitEditMode(editor, editingShape)
+        return
+      }
+
+      // Exit edit mode if shape is no longer selected
+      const selectedShapes = editor.getSelectedShapes()
+      const isStillSelected = selectedShapes.some(s => s.id === editingShape.id)
+      if (!isStillSelected) {
+        console.log('[BezierEditModeHandler] Shape deselected, exiting edit mode')
         BezierStateActions.exitEditMode(editor, editingShape)
       }
     }
 
-    return editor.store.listen(handleToolChange, {
+    return editor.store.listen(handleStoreChange, {
       source: 'user',
       scope: 'all',
     })
@@ -205,9 +217,14 @@ export function BezierEditModeHandler() {
       if (!paddedBounds.containsPoint(pagePoint)) {
         console.log('[BezierEditModeHandler] Click outside shape bounds, exiting edit mode')
         BezierStateActions.exitEditMode(editor, editingShape)
+        // Prevent event from bubbling to allow tldraw to handle the click normally
+        // (e.g., selecting another shape or clicking on canvas)
+        e.preventDefault()
+        e.stopPropagation()
       } else {
-        console.log('[BezierEditModeHandler] Click inside bounds but not on shape element, exiting edit mode')
-        BezierStateActions.exitEditMode(editor, editingShape)
+        console.log('[BezierEditModeHandler] Click inside bounds but not on shape element - staying in edit mode')
+        // Don't exit - allow clicking inside bounds without hitting a specific element
+        // This prevents accidental exits when trying to select edge points
       }
     }
 

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useEditor } from '@tldraw/tldraw'
 import { type BezierPoint } from '../shared/bezierShape'
 import { BEZIER_STYLES, BEZIER_THRESHOLDS } from '../shared/bezierConstants'
 
@@ -15,6 +16,19 @@ export const BezierControlPoints: React.FC<BezierControlPointsProps> = ({
   points,
   selectedPointIndices
 }) => {
+  const editor = useEditor()
+  const zoom = editor.getZoomLevel()
+
+  // Calculate zoom-compensated sizes to maintain consistent screen size
+  const anchorRadius = BEZIER_THRESHOLDS.ANCHOR_RADIUS / zoom
+  const anchorRadiusSelected = BEZIER_THRESHOLDS.ANCHOR_RADIUS_SELECTED / zoom
+  const controlRadius = BEZIER_THRESHOLDS.CONTROL_RADIUS / zoom
+  const controlRadiusSelected = BEZIER_THRESHOLDS.CONTROL_RADIUS_SELECTED / zoom
+
+  const controlLineWidth = BEZIER_STYLES.CONTROL_LINE_WIDTH / zoom
+  const anchorStrokeWidth = BEZIER_STYLES.ANCHOR_STROKE / zoom
+  const controlStrokeWidth = BEZIER_STYLES.CONTROL_STROKE / zoom
+
   return (
     <g opacity={BEZIER_STYLES.CONTROL_OPACITY}>
       {points.map((point, i) => {
@@ -30,7 +44,7 @@ export const BezierControlPoints: React.FC<BezierControlPointsProps> = ({
               x2={point.cp1.x}
               y2={point.cp1.y}
               stroke={BEZIER_STYLES.CONTROL_LINE_COLOR}
-              strokeWidth={BEZIER_STYLES.CONTROL_LINE_WIDTH}
+              strokeWidth={controlLineWidth}
               strokeDasharray={BEZIER_STYLES.CONTROL_LINE_DASH}
               opacity={0.5}
             />
@@ -42,42 +56,42 @@ export const BezierControlPoints: React.FC<BezierControlPointsProps> = ({
               x2={point.cp2.x}
               y2={point.cp2.y}
               stroke={BEZIER_STYLES.CONTROL_LINE_COLOR}
-              strokeWidth={BEZIER_STYLES.CONTROL_LINE_WIDTH}
+              strokeWidth={controlLineWidth}
               strokeDasharray={BEZIER_STYLES.CONTROL_LINE_DASH}
               opacity={0.5}
             />
           )}
-          
+
           {/* Control point handles */}
           {point.cp1 && (
             <circle
               cx={point.cp1.x}
               cy={point.cp1.y}
-              r={isSelected ? BEZIER_THRESHOLDS.CONTROL_RADIUS_SELECTED : BEZIER_THRESHOLDS.CONTROL_RADIUS}
+              r={isSelected ? controlRadiusSelected : controlRadius}
               fill={isSelected ? BEZIER_STYLES.CONTROL_POINT_FILL_SELECTED : BEZIER_STYLES.CONTROL_POINT_FILL}
               stroke={isSelected ? BEZIER_STYLES.CONTROL_POINT_STROKE_SELECTED : BEZIER_STYLES.CONTROL_POINT_STROKE}
-              strokeWidth={isSelected ? BEZIER_STYLES.CONTROL_STROKE_SELECTED : BEZIER_STYLES.CONTROL_STROKE}
+              strokeWidth={isSelected ? 0 : controlStrokeWidth}
             />
           )}
           {point.cp2 && (
             <circle
               cx={point.cp2.x}
               cy={point.cp2.y}
-              r={isSelected ? BEZIER_THRESHOLDS.CONTROL_RADIUS_SELECTED : BEZIER_THRESHOLDS.CONTROL_RADIUS}
+              r={isSelected ? controlRadiusSelected : controlRadius}
               fill={isSelected ? BEZIER_STYLES.CONTROL_POINT_FILL_SELECTED : BEZIER_STYLES.CONTROL_POINT_FILL}
               stroke={isSelected ? BEZIER_STYLES.CONTROL_POINT_STROKE_SELECTED : BEZIER_STYLES.CONTROL_POINT_STROKE}
-              strokeWidth={isSelected ? BEZIER_STYLES.CONTROL_STROKE_SELECTED : BEZIER_STYLES.CONTROL_STROKE}
+              strokeWidth={isSelected ? 0 : controlStrokeWidth}
             />
           )}
-          
+
           {/* Anchor points - draw these last so they appear on top */}
           <circle
             cx={point.x}
             cy={point.y}
-            r={isSelected ? BEZIER_THRESHOLDS.ANCHOR_RADIUS_SELECTED : BEZIER_THRESHOLDS.ANCHOR_RADIUS}
+            r={isSelected ? anchorRadiusSelected : anchorRadius}
             fill={isSelected ? BEZIER_STYLES.ANCHOR_POINT_FILL_SELECTED : BEZIER_STYLES.ANCHOR_POINT_FILL}
             stroke={isSelected ? BEZIER_STYLES.ANCHOR_POINT_STROKE_SELECTED : BEZIER_STYLES.ANCHOR_POINT_STROKE}
-            strokeWidth={isSelected ? BEZIER_STYLES.ANCHOR_STROKE_SELECTED : BEZIER_STYLES.ANCHOR_STROKE}
+            strokeWidth={isSelected ? 0 : anchorStrokeWidth}
             style={{ cursor: 'pointer' }}
           />
           </g>
