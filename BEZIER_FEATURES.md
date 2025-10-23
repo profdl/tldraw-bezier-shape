@@ -33,13 +33,13 @@ The bezier tool now has **full path segment selection and editing functionality*
 - **Shift + Click** to multi-select points
 - **Click** a control handle to adjust it independently
 
-### Segment Selection (Advanced)
-✨ **New functionality now enabled:**
+### Segment Operations (Advanced)
+✨ **Advanced curve editing:**
 
-- **Alt + Hover** over a curve segment shows a preview point
-- **Alt + Click** on a segment adds a new point at that location
+- **Double-click** on a curve segment to add a new point at that location
+- **Drag** a segment to reshape the curve by adjusting control points
 - **Selected segments** are highlighted with a dashed outline
-- Segment selection allows for precise curve manipulation
+- Segment operations allow for precise curve manipulation
 
 ### Point Operations
 - **Drag** anchor points to move them
@@ -51,16 +51,15 @@ The bezier tool now has **full path segment selection and editing functionality*
 ### Keyboard Shortcuts in Edit Mode
 - **Escape** or **Enter** - Exit edit mode
 - **Delete/Backspace** - Remove selected points
-- **Alt** - Enable segment hover/selection mode
 - **Shift** - Multi-select points
-- **Ctrl/Cmd** - Asymmetric handle adjustment
+- **Ctrl/Cmd** - Asymmetric handle adjustment during creation
 
 ## Advanced Features
 
-### Segment Dragging
-- Hold **Alt** while hovering over a curve segment
-- See preview point where you can add a new anchor
-- Click while holding **Alt** to add the point
+### Segment Editing
+- **Double-click** a curve segment to add a new anchor point
+- **Drag** a segment directly to reshape the curve
+- The tool automatically adjusts control points to maintain smooth curves
 
 ### Point Type Toggling
 - **Double-click** an anchor point to convert:
@@ -72,32 +71,32 @@ The bezier tool now has **full path segment selection and editing functionality*
 - Operations (delete, move) apply to all selected points
 - Selected points are highlighted in blue
 
-### Hover Preview
-When in edit mode with the select tool:
-- Move mouse over curve segments to see insertion preview
-- Preview shows exact position where new point would be added
-- Hover state is tracked per segment for precise control
+### Point Addition
+When in edit mode:
+- **Double-click** any curve segment to add a point at that location
+- The curve is automatically split at the click position
+- New point inherits smooth curve characteristics from the segment
 
 ## Technical Details
 
-### Services Initialized
-✅ **BezierEditModeService** - Global event handler for advanced editing
-- Manages Alt+hover for segment selection
-- Handles double-click for point type toggling
-- Provides multi-point selection
-- Tracks segment hover states
+### Components
+✅ **BezierEditModeHandler** - DOM event handler for advanced editing
+- Intercepts pointer events using DOM capture phase
+- Handles double-click for point type toggling and segment point insertion
+- Provides multi-point selection via shift-click
+- Manages segment drag operations for curve reshaping
 
 ### Visual Feedback
 - **Blue dots** - Selected anchor points
 - **Gray dots** - Unselected anchor points
 - **Small circles** - Control handles
-- **Dashed highlight** - Selected segment
-- **Ghost point** - Hover preview for point insertion
+- **Dashed highlight** - Selected segment (when dragging)
 
 ## Tips & Best Practices
 
-1. **Use Alt key** for adding points to existing curves
-2. **Double-click quickly** on anchor points to toggle smooth/corner
+1. **Double-click segments** to add points to existing curves
+2. **Double-click anchor points** to toggle smooth/corner types
 3. **Shift-select** multiple points for batch operations
-4. **Drag with Ctrl** for asymmetric handles (great for corners)
+4. **Drag with Ctrl** during creation for asymmetric handles (great for corners)
 5. **Close curves** for filled shapes (click near start or press 'C')
+6. **Drag segments** directly to reshape curves without adjusting individual handles

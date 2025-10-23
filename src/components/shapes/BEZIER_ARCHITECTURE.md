@@ -144,7 +144,7 @@ Toggle between modes:
 
 ## Key Components
 
-### Services (`src/components/shapes/services/`)
+### Services (`src/lib/shapes/bezier/shared/`)
 
 #### BezierState
 **Purpose**: Pure functional state transformations
@@ -196,25 +196,36 @@ BezierBounds.recalculateShapeBounds(shape, newPoints) → updated shape
 BezierBounds.getAccurateBounds(points, isClosed) → bounds
 ```
 
-#### Bezier editing state
-**Purpose**: Handles edit-mode interactions within the `BezierShapeTool` state machine.
+#### BezierEditModeHandler
+**Purpose**: React component that handles edit-mode interactions using DOM event capture.
 
 **Responsibilities**:
-- Listen for pointer events while the tool is in `editing`
-- Detect double-clicks (toggle point type)
-- Delegate anchor selection / point insertion to `BezierState`
-- Exit edit mode on Escape / Enter or pointer-up on the canvas
+- Intercepts pointer events before tldraw's handle system (using capture: true)
+- Manages double-click detection for toggling point types
+- Handles segment click and drag operations
+- Detects clicks outside shape to exit edit mode
+- Manages keyboard shortcuts (Delete/Backspace) in edit mode
+
+**Why DOM event capture?**
+TLDraw's handle system intercepts pointer events on anchor points (rendered as handles), preventing the shape's event handlers from receiving them. By using DOM listeners with `capture: true`, we intercept events BEFORE tldraw processes them.
 
 **Implementation**:
-- Lives in `src/lib/shapes/bezier/toolStates/Editing.ts`
-- Uses the editor's built-in event data instead of attaching DOM listeners
+- Lives in `src/lib/shapes/bezier/components/BezierEditModeHandler.tsx`
+- Uses React hooks with DOM event listeners
+- Renders nothing (returns null) - purely functional component
 
-### Tool States (`src/components/shapes/tools/states/`)
+### Tool States (`src/lib/shapes/bezier/toolStates/`)
 
-#### BezierIdle
+#### Idle (`src/lib/shapes/bezier/toolStates/Idle.ts`)
 **Entry point** for the bezier tool. Waits for pointer down to start creating.
 
-#### BezierCreating
+**Responsibilities**:
+- Sets crosshair cursor when entering the tool
+- Transitions to Creating state on canvas click
+- Transitions to Editing state when clicking on a bezier shape already in edit mode
+- Handles extending existing shapes (receives extendingShapeId in onEnter)
+
+#### Creating (`src/lib/shapes/bezier/toolStates/Creating.ts`)
 **Active drawing mode**. Handles:
 - Click to add points
 - Drag to create control handles
@@ -227,12 +238,14 @@ BezierBounds.getAccurateBounds(points, isClosed) → bounds
 - Corner point threshold (small drags create corner points, larger drags create smooth points)
 - Hysteresis for snap-to-start (different thresholds for entering/exiting snap)
 
-#### BezierEditing
-**Edit mode for existing shapes**. Handles:
-- Click on segment to add point
-- Click on anchor to select
-- Shift+click for multi-select
-- Double-click anchor to toggle smooth/corner
+#### Editing (`src/lib/shapes/bezier/toolStates/Editing.ts`)
+**Edit mode for existing shapes** within the tool's state machine. Handles:
+- Setting editMode=true on the shape when entering
+- Basic pointer event routing
+- Alt+drag for segment manipulation
+- Transitioning back to select tool on escape/enter
+
+**Note**: Most edit-mode interactions are handled by `BezierEditModeHandler` component, which uses DOM event capture to intercept events before tldraw's handle system processes them.
 
 ## State Machine
 
@@ -308,18 +321,19 @@ const updatedShape = BezierBounds.recalculateShapeBounds(shape, points)
 ### Editing an Existing Curve
 
 1. User double-clicks shape (in select tool) → `BezierShapeUtil.onDoubleClick()`
-2. Shape enters edit mode → `BezierState.enterEditMode()`
-3. `BezierEditing` state handles pointer / keyboard events
-4. User clicks anchor → state calls `BezierState.handlePointSelection()`
-5. User alt+drags segment → `BezierEditing` adjusts control handles symmetrically
+2. Shape enters edit mode → `BezierStateActions.enterEditMode()`
+3. `BezierEditModeHandler` component listens for DOM events with capture phase
+4. User clicks anchor → handler calls `BezierStateActions.handlePointSelection()`
+5. User double-clicks anchor → handler calls `BezierStateActions.togglePointType()`
 6. User drags anchor → TLDraw's handle system calls `BezierShapeUtil.onHandleDrag()`
-7. User presses Delete → state calls `BezierState.deleteSelectedPoints()`
-8. User presses Escape → `BezierState.exitEditMode()` → back to normal mode
+7. User drags segment → handler manages segment drag state and updates control points
+8. User presses Delete → handler calls `BezierStateActions.deleteSelectedPoints()`
+9. User presses Escape or clicks outside → `BezierStateActions.exitEditMode()` → back to normal mode
 
 ### Adding a Point
 
-1. User clicks on curve segment (in edit mode)
-2. `BezierEditing.onPointerDown()` detects segment click
+1. User double-clicks on curve segment (in edit mode)
+2. `BezierEditModeHandler` detects double-click on segment
 3. Convert page coords to local coords
 4. `BezierState.getSegmentAtPosition()` finds which segment (returns t value)
 5. `BezierState.addPointToSegment()` uses `BezierMath.splitSegmentAtT()`
@@ -361,56 +375,48 @@ if (segmentInfo) {
 ### How to Delete Selected Points
 
 ```typescript
-// 1. Use BezierState service
-const updatedShape = BezierState.deleteSelectedPoints(shape);
-
-// 2. Recalculate bounds
-const finalShape = BezierBounds.recalculateShapeBounds(
-  updatedShape,
-  updatedShape.props.points
-);
-
-// 3. Update in editor
-editor.updateShape(finalShape);
+// Use BezierStateActions service (handles bounds recalculation internally)
+BezierStateActions.deleteSelectedPoints(editor, shape);
 ```
 
 ### How to Toggle Point Type (Smooth ↔ Corner)
 
 ```typescript
 // On double-click of anchor point
-const updatedShape = BezierState.togglePointType(shape, pointIndex);
-editor.updateShape(updatedShape);
+BezierStateActions.togglePointType(editor, shape, pointIndex);
+// Note: BezierStateActions methods handle editor.updateShape() internally
 ```
 
 ## Adding New Features
 
 ### Adding a New Keyboard Shortcut
 
-Edit `BezierEditing.onKeyDown()`:
+Edit `BezierEditModeHandler` component's keyboard event listener:
 
 ```typescript
-private handleKeyDown(e: KeyboardEvent) {
+const handleKeyDown = (event: KeyboardEvent) => {
   // ... existing code ...
 
-  switch (e.key) {
-    case 's':
-      // Cmd/Ctrl+S to simplify path
-      if (e.metaKey || e.ctrlKey) {
-        this.simplifyPath(editingBezierShape)
-        e.preventDefault()
-      }
-      break;
+  if (event.key === 's' && (event.metaKey || event.ctrlKey)) {
+    // Cmd/Ctrl+S to simplify path
+    const editingShape = getEditingShape()
+    if (editingShape) {
+      simplifyPath(editor, editingShape)
+      event.preventDefault()
+      event.stopPropagation()
+    }
   }
 }
 ```
 
 ### Adding a New Point Operation
 
-1. Add pure function to `BezierState`:
+1. Add function to `BezierState` (for pure transformations):
 ```typescript
+// In bezierState.ts
 static mirrorPoint(shape: BezierShape, pointIndex: number): BezierShape {
   const newPoints = [...shape.props.points];
-  const point = newPoints[pointIndex];
+  const point = { ...newPoints[pointIndex] };
 
   if (point.cp1 && point.cp2) {
     // Mirror cp1 based on cp2
@@ -422,11 +428,22 @@ static mirrorPoint(shape: BezierShape, pointIndex: number): BezierShape {
     };
   }
 
+  newPoints[pointIndex] = point;
   return { ...shape, props: { ...shape.props, points: newPoints } };
 }
 ```
 
-2. Call from the appropriate event handler in `BezierEditing`
+2. Add action to `BezierStateActions` (if it needs editor interaction):
+```typescript
+// In bezierState.ts BezierStateActions namespace
+static mirrorPoint(editor: Editor, shape: BezierShape, pointIndex: number): void {
+  const updatedShape = BezierState.mirrorPoint(shape, pointIndex);
+  const finalShape = BezierBounds.recalculateShapeBounds(updatedShape, updatedShape.props.points);
+  editor.updateShape(finalShape);
+}
+```
+
+3. Call from the appropriate event handler in `BezierEditModeHandler`
 
 ### Adding a New Math Operation
 
@@ -478,9 +495,10 @@ Needed test coverage:
 
 ### Event Handling
 
-- Tool states use TLDraw's state node hooks (no global DOM listeners)
+- Edit mode uses DOM event listeners with capture phase (`BezierEditModeHandler`)
+- Tool states use TLDraw's StateNode hooks for tool-level events
 - Logic only runs while a bezier shape is in edit mode
-- Delegates heavy lifting to pure functions in the shared service layer
+- Delegates heavy lifting to pure functions in the shared service layer (BezierState, BezierMath, BezierBounds)
 
 ## Common Pitfalls
 
