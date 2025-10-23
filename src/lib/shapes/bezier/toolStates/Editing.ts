@@ -29,7 +29,7 @@ export class Editing extends StateNode {
 	private segmentDrag: SegmentDragState | null = null
 
 	override onEnter(info: TLPointerEventInfo & { target: 'shape'; shape: BezierShape }) {
-		console.log('[Editing] onEnter called', {
+		bezierLog('Editing', 'onEnter called', {
 			shapeId: info.shape.id,
 			editMode: info.shape.props.editMode,
 			target: info.target
@@ -38,7 +38,7 @@ export class Editing extends StateNode {
 		this.targetShape = info.shape
 
 		if (!info.shape.props.editMode) {
-			console.log('[Editing] onEnter: Setting editMode to true')
+			bezierLog('Editing', 'Setting editMode to true')
 			this.editor.updateShape({
 				id: info.shape.id,
 				type: 'bezier',
@@ -48,25 +48,25 @@ export class Editing extends StateNode {
 				},
 			})
 		} else {
-			console.log('[Editing] onEnter: Already in edit mode')
+			bezierLog('Editing', 'Already in edit mode')
 		}
 	}
 
 	override onPointerDown(info: TLPointerEventInfo) {
-		console.log('[Editing] onPointerDown called', { target: info.target, altKey: info.altKey })
+		bezierLog('Editing', 'onPointerDown called', { target: info.target, altKey: info.altKey })
 		const shape = this.getEditingShape()
 		if (!shape) {
-			console.log('[Editing] onPointerDown: No editing shape found')
+			bezierLog('Editing', 'No editing shape found')
 			return
 		}
 
 		const localPoint = this.getLocalPoint(shape, info.point)
 		const zoom = this.editor.getZoomLevel()
-		console.log('[Editing] onPointerDown localPoint:', localPoint, 'zoom:', zoom)
+		bezierLog('Editing', 'onPointerDown localPoint:', localPoint, 'zoom:', zoom)
 
 		// Anchor selection
 		const anchorIndex = BezierState.getAnchorPointAt(shape.props.points, localPoint, zoom)
-		console.log('[Editing] onPointerDown anchorIndex:', anchorIndex)
+		bezierLog('Editing', 'anchorIndex:', anchorIndex)
 		if (anchorIndex !== -1) {
 			bezierLog(
 				'Selection',
@@ -81,35 +81,36 @@ export class Editing extends StateNode {
 
 		// Control handles handled by TLDraw
 		const controlInfo = BezierState.getControlPointAt(shape.props.points, localPoint, zoom)
-		console.log('[Editing] onPointerDown controlInfo:', controlInfo)
+		bezierLog('Editing', 'controlInfo:', controlInfo)
 		if (controlInfo) return
 
 		// Segment selection / drag
+		const canSelectSegments = this.editor.getCurrentToolId() === 'select'
 		const segmentInfo = BezierState.getSegmentAtPosition(shape.props.points, localPoint, zoom, shape.props.isClosed)
-		console.log('[Editing] onPointerDown segmentInfo:', segmentInfo)
-		if (segmentInfo) {
+		bezierLog('Editing', 'segmentInfo:', segmentInfo, 'canSelectSegments:', canSelectSegments)
+		if (segmentInfo && canSelectSegments) {
 			if (info.altKey) {
-				console.log('[Editing] onPointerDown: Starting segment drag')
+				bezierLog('Editing', 'Starting segment drag')
 				this.beginSegmentDrag(shape, segmentInfo.segmentIndex, localPoint)
 			} else {
-				console.log('[Editing] onPointerDown: Selecting segment', segmentInfo.segmentIndex)
+				bezierLog('Editing', 'Selecting segment', segmentInfo.segmentIndex)
 				BezierStateActions.selectSegment(this.editor, shape, segmentInfo.segmentIndex)
 			}
 			return
 		}
 
-		console.log('[Editing] onPointerDown: No anchor/control/segment hit')
+		bezierLog('Editing', 'No anchor/control/segment hit')
 		// Click outside shape -> clear selection and possibly exit
 		BezierStateActions.clearPointSelection(this.editor, shape)
 		BezierStateActions.clearSegmentSelection(this.editor, shape)
 
 		if (info.target === 'canvas') {
-			console.log('[Editing] onPointerDown: Canvas click, pending exit')
+			bezierLog('Editing', 'Canvas click, pending exit')
 			this.pendingCanvasExit = true
 			return
 		}
 
-		console.log('[Editing] onPointerDown: Exiting edit mode')
+		bezierLog('Editing', 'Exiting edit mode')
 		this.pendingCanvasExit = false
 		this.exitEditMode()
 	}
@@ -137,51 +138,51 @@ export class Editing extends StateNode {
 	}
 
 	override onPointerUp() {
-		console.log('[Editing] onPointerUp', {
+		bezierLog('Editing', 'onPointerUp', {
 			hasSegmentDrag: !!this.segmentDrag,
 			pendingCanvasExit: this.pendingCanvasExit,
 			isDragging: this.editor.inputs.isDragging
 		})
 		if (this.segmentDrag) {
-			console.log('[Editing] onPointerUp: Ending segment drag')
+			bezierLog('Editing', 'Ending segment drag')
 			this.segmentDrag = null
 			this.editor.setCursor({ type: 'pointer' })
 		}
 
 		if (this.pendingCanvasExit && !this.editor.inputs.isDragging) {
-			console.log('[Editing] onPointerUp: Exiting edit mode due to canvas click')
+			bezierLog('Editing', 'Exiting edit mode due to canvas click')
 			this.exitEditMode()
 		}
 		this.pendingCanvasExit = false
 	}
 
 	override onDoubleClick(info: TLClickEventInfo) {
-		console.log('[Editing] onDoubleClick called', { target: info.target })
+		bezierLog('Editing', 'onDoubleClick called', { target: info.target })
 		const shape = this.getEditingShape()
 		if (!shape) {
-			console.log('[Editing] onDoubleClick: No editing shape found')
+			bezierLog('Editing', 'No editing shape found')
 			return
 		}
 
 		const localPoint = this.getLocalPoint(shape, info.point)
 		const zoom = this.editor.getZoomLevel()
-		console.log('[Editing] onDoubleClick localPoint:', localPoint, 'zoom:', zoom)
+		bezierLog('Editing', 'onDoubleClick localPoint:', localPoint, 'zoom:', zoom)
 
 		const anchorIndex = BezierState.getAnchorPointAt(shape.props.points, localPoint, zoom)
-		console.log('[Editing] onDoubleClick anchorIndex:', anchorIndex)
+		bezierLog('Editing', 'anchorIndex:', anchorIndex)
 		if (anchorIndex !== -1) {
-			console.log('[Editing] onDoubleClick: Toggling point type for anchor', anchorIndex)
+			bezierLog('Editing', 'Toggling point type for anchor', anchorIndex)
 			BezierStateActions.togglePointType(this.editor, shape, anchorIndex)
 			return
 		}
 
 		const segmentInfo = BezierState.getSegmentAtPosition(shape.props.points, localPoint, zoom, shape.props.isClosed)
-		console.log('[Editing] onDoubleClick segmentInfo:', segmentInfo)
+		bezierLog('Editing', 'segmentInfo:', segmentInfo)
 		if (segmentInfo) {
-			console.log('[Editing] onDoubleClick: Adding point to segment', segmentInfo.segmentIndex)
+			bezierLog('Editing', 'Adding point to segment', segmentInfo.segmentIndex)
 			this.addPointToSegment(shape, segmentInfo)
 		} else {
-			console.log('[Editing] onDoubleClick: No segment hit')
+			bezierLog('Editing', 'No segment hit')
 		}
 	}
 
@@ -292,18 +293,18 @@ export class Editing extends StateNode {
 	}
 
 	private exitEditMode() {
-		console.log('[Editing] exitEditMode called', { targetShapeId: this.targetShapeId })
+		bezierLog('Editing', 'exitEditMode called', { targetShapeId: this.targetShapeId })
 		if (!this.targetShapeId) {
-			console.log('[Editing] exitEditMode: No target shape ID')
+			bezierLog('Editing', 'No target shape ID')
 			return
 		}
 
 		const shape = this.editor.getShape(this.targetShapeId) as BezierShape
 		if (shape) {
-			console.log('[Editing] exitEditMode: Exiting edit mode for shape', shape.id)
+			bezierLog('Editing', 'Exiting edit mode for shape', shape.id)
 			BezierStateActions.exitEditMode(this.editor, shape)
 		} else {
-			console.log('[Editing] exitEditMode: Shape not found')
+			bezierLog('Editing', 'Shape not found')
 		}
 
 		this.segmentDrag = null

@@ -71,7 +71,7 @@ export function BezierEditModeHandler() {
       const currentToolId = editor.getCurrentToolId()
       const isAllowedTool = currentToolId === 'select' || (currentToolId === 'bezier' && isTransientShape)
       if (!isAllowedTool) {
-        console.log('[BezierEditModeHandler] Tool changed, exiting edit mode')
+        bezierLog('EditMode', 'Tool changed, exiting edit mode')
         BezierStateActions.exitEditMode(editor, editingShape, { deselect: true })
         return
       }
@@ -80,7 +80,7 @@ export function BezierEditModeHandler() {
       const selectedShapes = editor.getSelectedShapes()
       const isStillSelected = selectedShapes.some(s => s.id === editingShape.id)
       if (!isTransientShape && !isStillSelected) {
-        console.log('[BezierEditModeHandler] Shape deselected, exiting edit mode')
+        bezierLog('EditMode', 'Shape deselected, exiting edit mode')
         BezierStateActions.exitEditMode(editor, editingShape, { deselect: true })
       }
     }
@@ -140,11 +140,17 @@ export function BezierEditModeHandler() {
       const editingShape = getEditingShape()
 
       if (!editingShape) {
-        console.log('[BezierEditModeHandler] No shape in edit mode')
+        bezierLog('EditMode', 'No shape in edit mode')
         return
       }
 
-      console.log('[BezierEditModeHandler] Pointer down detected in edit mode')
+      const currentToolId = editor.getCurrentToolId()
+      const canSelectSegments = currentToolId === 'select'
+
+      bezierLog('EditMode', 'Pointer down detected in edit mode', {
+        currentToolId,
+        canSelectSegments
+      })
 
       const pagePoint = editor.screenToPage({ x: e.clientX, y: e.clientY })
       const shapePageBounds = editor.getShapePageBounds(editingShape.id)
@@ -183,7 +189,7 @@ export function BezierEditModeHandler() {
           count: isDoubleClick ? 0 : clickCount,
         }
 
-        console.log('[BezierEditModeHandler] Click detection:', {
+        bezierLog('EditMode', 'Click detection:', {
           timeSinceLastClick,
           distanceFromLastClick,
           clickCount,
@@ -231,19 +237,14 @@ export function BezierEditModeHandler() {
 
       if (shouldHandleAnchor) {
         const isDoubleClick = registerClick('anchor', anchorIndex)
-        console.log(
-          '[BezierEditModeHandler] Clicked on anchor',
-          anchorIndex,
-          'isDoubleClick:',
+        bezierLog('EditMode', 'Clicked on anchor', anchorIndex, {
           isDoubleClick,
-          'controlDistance:',
           controlDistance,
-          'anchorDistance:',
           anchorDistance
-        )
+        })
 
         if (isDoubleClick) {
-          console.log('[BezierEditModeHandler] DOUBLE-CLICK on anchor - toggling point type')
+          bezierLog('EditMode', 'DOUBLE-CLICK on anchor - toggling point type')
           BezierStateActions.togglePointType(editor, editingShape, anchorIndex)
           // Prevent the event from reaching tldraw's double-click handler (which switches to text tool)
           e.preventDefault()
@@ -252,20 +253,16 @@ export function BezierEditModeHandler() {
         }
 
         // Single click - handle point selection
-        console.log('[BezierEditModeHandler] Single click on anchor - selecting')
+        bezierLog('EditMode', 'Single click on anchor - selecting')
         BezierStateActions.handlePointSelection(editor, editingShape, anchorIndex, e.shiftKey)
         return
       }
 
       if (controlPoint) {
-        console.log(
-          '[BezierEditModeHandler] Clicked on control point',
-          controlPoint,
-          'anchorDistance:',
+        bezierLog('EditMode', 'Clicked on control point', controlPoint, {
           anchorDistance,
-          'controlDistance:',
           controlDistance
-        )
+        })
         registerClick('control', controlPoint.pointIndex)
         // Let tldraw's handle system manage control point dragging
         return
@@ -281,10 +278,14 @@ export function BezierEditModeHandler() {
 
       if (segmentInfo) {
         const isDoubleClick = registerClick('segment', segmentInfo.segmentIndex)
-        console.log('[BezierEditModeHandler] Clicked on segment', segmentInfo.segmentIndex, 'isDoubleClick:', isDoubleClick, 'altKey:', e.altKey)
+        bezierLog('EditMode', 'Clicked on segment', segmentInfo.segmentIndex, {
+          isDoubleClick,
+          altKey: e.altKey,
+          canSelectSegments
+        })
 
         if (isDoubleClick) {
-          console.log('[BezierEditModeHandler] DOUBLE-CLICK on segment - adding point')
+          bezierLog('EditMode', 'DOUBLE-CLICK on segment - adding point')
           const updatedShape = BezierState.addPointToSegment(
             editingShape,
             segmentInfo.segmentIndex,
@@ -302,8 +303,15 @@ export function BezierEditModeHandler() {
           return
         }
 
+        if (!canSelectSegments) {
+          bezierLog('EditMode', 'Ignoring segment click - current tool cannot select segments', {
+            currentToolId
+          })
+          return
+        }
+
         // Drag to reshape segment
-        console.log('[BezierEditModeHandler] Starting segment drag')
+        bezierLog('EditMode', 'Starting segment drag')
         segmentDragRef.current = {
           shapeId: editingShape.id,
           segmentIndex: segmentInfo.segmentIndex,
@@ -334,13 +342,13 @@ export function BezierEditModeHandler() {
 
       if (!shapeHit) {
         registerClick('canvas', null)
-        console.log('[BezierEditModeHandler] Click outside shape geometry, exiting edit mode')
+        bezierLog('EditMode', 'Click outside shape geometry, exiting edit mode')
         BezierStateActions.exitEditMode(editor, editingShape, { deselect: true })
         return
       }
 
       registerClick('canvas', null)
-      console.log('[BezierEditModeHandler] Click inside shape area without target - staying in edit mode')
+      bezierLog('EditMode', 'Click inside shape area without target - staying in edit mode')
     }
 
     const handlePointerMove = (e: PointerEvent) => {
@@ -412,7 +420,7 @@ export function BezierEditModeHandler() {
         },
       })
 
-      console.log('[BezierEditModeHandler] Segment drag update, delta:', delta)
+      bezierLog('EditMode', 'Segment drag update, delta:', delta)
     }
 
     const handlePointerUp = () => {
@@ -422,7 +430,7 @@ export function BezierEditModeHandler() {
       const shape = editor.getShape(shapeId) as BezierShape | undefined
 
       if (shape) {
-        console.log('[BezierEditModeHandler] Ending segment drag, recalculating bounds')
+        bezierLog('EditMode', 'Ending segment drag, recalculating bounds')
         const normalizedShape = BezierBounds.recalculateShapeBounds(shape, shape.props.points)
         editor.updateShape(normalizedShape)
       }

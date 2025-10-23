@@ -39,11 +39,32 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
   static override props = bezierShapeProps
   static override migrations = bezierShapeMigrations
 
-  // TODO: [tldraw-handoff] Double-click detection approach - review with tldraw team
-  // Track clicks for double-click detection on handles using instance state.
-  // Question for tldraw team: Should we use tldraw's native double-click handlers
-  // or is this manual tracking approach acceptable? Instance state in ShapeUtil
-  // may be unreliable if instances are shared/recreated.
+  /**
+   * TODO: [tldraw-handoff] Double-click detection approach - review with tldraw team
+   *
+   * Current implementation: Manual double-click tracking using instance state
+   *
+   * **Why this exists:**
+   * - Need to detect double-clicks on anchor points to toggle smooth/corner type
+   * - tldraw's onDoubleClick handler fires for the shape, but doesn't identify which anchor
+   * - Handle system doesn't provide double-click events on individual handles
+   *
+   * **Concerns:**
+   * - ShapeUtil instances may be recreated, causing click state loss
+   * - Duplicates functionality that might exist in tldraw's event system
+   * - Manual timing thresholds (300ms) may not match platform conventions
+   *
+   * **Question for tldraw team:**
+   * Is there a native way to detect double-clicks on specific handles, or should we
+   * move this tracking to editor state/tool state instead of ShapeUtil instance state?
+   *
+   * **Alternative approaches to consider:**
+   * 1. Store last click in editor.getInstanceState().meta
+   * 2. Move to tool state instead of ShapeUtil
+   * 3. Use a global WeakMap keyed by shape ID
+   *
+   * @see {@link https://github.com/tldraw/tldraw Relevant tldraw documentation}
+   */
   private lastClickTime = 0
   private lastClickedHandleId: string | null = null
   private lastClickCount = 0
@@ -347,9 +368,10 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
     }
 
     // Check for segment selection
+    const canSelectSegments = this.editor.getCurrentToolId() === 'select'
     const segmentInfo = BezierState.getSegmentAtPosition(shape.props.points, localPoint, zoom, shape.props.isClosed)
-    bezierLog('Interaction', 'onPointerDown: segmentInfo =', segmentInfo)
-    if (segmentInfo) {
+    bezierLog('Interaction', 'onPointerDown: segmentInfo =', segmentInfo, 'canSelectSegments =', canSelectSegments)
+    if (segmentInfo && canSelectSegments) {
       bezierLog('Interaction', 'Selecting segment', segmentInfo.segmentIndex)
       BezierStateActions.selectSegment(this.editor, shape, segmentInfo.segmentIndex)
       return

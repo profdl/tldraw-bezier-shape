@@ -21,12 +21,55 @@ export interface BezierPoint {
 }
 
 /**
+ * Shape properties for the Bezier path shape.
+ *
  * TODO: [tldraw-handoff] Edit mode storage pattern - review with tldraw team
- * This shape stores edit mode state (editMode, selectedPointIndices, selectedSegmentIndex)
- * directly in shape props rather than in tool state or editor state.
- * Question for tldraw team: Is this pattern acceptable, or should we use a separate
- * "editing tool" state to manage these UI concerns? Most tldraw shapes don't store
- * interaction state in props.
+ *
+ * Current implementation: Edit mode UI state stored in shape props
+ *
+ * **Why this exists:**
+ * - Bezier shapes need an "edit mode" where users can select/move/add/delete points
+ * - We need to track which points are selected (selectedPointIndices)
+ * - We need to track which segment is selected (selectedSegmentIndex)
+ * - Storing in props makes the state automatically persist through undo/redo
+ *
+ * **Current approach:**
+ * ```ts
+ * interface BezierShapeProps {
+ *   // ... standard props
+ *   editMode?: boolean                  // Whether shape is in edit mode
+ *   selectedPointIndices?: number[]     // Which anchor points are selected
+ *   selectedSegmentIndex?: number       // Which segment is selected
+ * }
+ * ```
+ *
+ * **Concerns:**
+ * - Most tldraw shapes don't store UI interaction state in props
+ * - Edit state gets serialized with the shape (persisted, copy/pasted, etc.)
+ * - Appears in undo/redo history (is this desirable?)
+ * - Multiple shapes could theoretically be in edit mode simultaneously (though we prevent this)
+ *
+ * **Alternative approaches:**
+ * 1. **Separate editing tool**: Create a "bezier-editing" tool that manages selection state
+ *    - Pros: Cleaner separation of data vs UI state
+ *    - Cons: More complex tool state machine, loses undo/redo for point selection
+ *
+ * 2. **Editor instance state**: Store in editor.getInstanceState().meta
+ *    - Pros: Not persisted with shape, follows tldraw patterns better
+ *    - Cons: Lost on page refresh, doesn't survive undo/redo
+ *
+ * 3. **Hybrid approach**: editMode in props, selection in editor state
+ *    - Pros: Best of both worlds
+ *    - Cons: Split brain - harder to reason about
+ *
+ * **Question for tldraw team:**
+ * Which pattern do you recommend? Are there examples of other shapes with similar
+ * multi-point editing needs we should follow?
+ *
+ * **Similar shapes in tldraw:**
+ * - Line shape: Has multiple points but simpler editing model
+ * - Draw shape: Has points but no individual point selection
+ * - Arrow shape: Has start/end/mid points but fixed structure
  *
  * @public
  */

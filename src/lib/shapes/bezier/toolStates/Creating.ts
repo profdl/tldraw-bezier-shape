@@ -663,11 +663,35 @@ export class Creating extends StateNode {
     this.editor.setCurrentTool('select')
     this.editor.setSelectedShapes([this.shapeId])
 
-    // TODO: [tldraw-handoff] Transform control workaround - review with tldraw team
-    // This setTimeout is used to force transform controls to update properly for the closed shape.
-    // Small delay ensures TLDraw's selection state fully updates before refreshing.
-    // Question for tldraw team: Is there a proper lifecycle hook or batch operation
-    // that can replace this setTimeout pattern? See also line 806 for similar usage.
+    /**
+     * TODO: [tldraw-handoff] Transform control workaround - review with tldraw team
+     *
+     * Current implementation: setTimeout + selection toggle to refresh transform controls
+     *
+     * **Why this exists:**
+     * - When closing a bezier curve, the shape's geometry changes significantly
+     * - Transform controls don't automatically update to match the new closed path bounds
+     * - Toggling selection (deselect then reselect) forces controls to recalculate
+     * - 50ms delay ensures tldraw's selection state propagates through update cycle
+     *
+     * **Problem:**
+     * - Timing-dependent code is fragile and hard to test
+     * - May break with future tldraw internal changes
+     * - Causes brief visual flicker of selection handles
+     *
+     * **Question for tldraw team:**
+     * What's the proper way to signal that a shape's bounds have changed and transform
+     * controls need to refresh? Options we've considered:
+     * 1. editor.batch() for atomic shape updates
+     * 2. Specific lifecycle hook after shape modification
+     * 3. Different shape creation pattern that avoids this issue
+     *
+     * **Reproduction:**
+     * Without this code, closing a curve leaves transform handles positioned for the
+     * open path, not accounting for the closing segment's contribution to bounds.
+     *
+     * @see Creating.ts:813 for similar workaround in curve completion
+     */
     setTimeout(() => {
       this.editor.setSelectedShapes([])
       this.editor.setSelectedShapes([this.shapeId])
@@ -805,11 +829,32 @@ export class Creating extends StateNode {
     if (this.points.length >= 2) {
       this.editor.setSelectedShapes([this.shapeId])
 
-      // TODO: [tldraw-handoff] Transform control workaround - review with tldraw team
-      // This setTimeout is used to force transform controls to initialize properly for the newly completed shape.
-      // Minimal delay to ensure selection state propagates through TLDraw's update cycle.
-      // Question for tldraw team: Is there a proper lifecycle hook or batch operation
-      // that can replace this setTimeout pattern? See also line 670 for similar usage.
+      /**
+       * TODO: [tldraw-handoff] Transform control workaround - review with tldraw team
+       *
+       * Current implementation: setTimeout + selection toggle for transform control initialization
+       *
+       * **Why this exists:**
+       * - Newly completed bezier shapes need transform controls to initialize
+       * - Immediate selection after shape completion doesn't always show handles
+       * - Toggling selection with small delay (10ms) forces proper initialization
+       * - This is the same issue as curve closing but with shorter delay
+       *
+       * **Problem:**
+       * - Timing-dependent code is fragile
+       * - Different timeout values for different operations (10ms vs 50ms) suggests guesswork
+       * - May cause race conditions with other selection-dependent features
+       *
+       * **Question for tldraw team:**
+       * Is there a shape finalization callback or lifecycle event we should use instead?
+       * Should we be using editor.batch() or a different pattern for multi-step shape creation?
+       *
+       * **Reproduction:**
+       * Without this code, completing a path via Enter or double-click leaves the shape
+       * selected but without visible transform handles until you click elsewhere and back.
+       *
+       * @see Creating.ts:695 for similar workaround in curve closing
+       */
       setTimeout(() => {
         this.editor.setSelectedShapes([])
         this.editor.setSelectedShapes([this.shapeId])
