@@ -4,7 +4,7 @@ import { Vec, type TLShapeId } from '@tldraw/editor'
 import { type BezierShape, type BezierPoint } from '../shared/bezierShape'
 import { BezierState, BezierStateActions } from '../shared/bezierState'
 import { BezierBounds } from '../shared/bezierBounds'
-import { bezierLog } from '../shared/bezierConstants'
+import { bezierLog, BEZIER_BOUNDS } from '../shared/bezierConstants'
 
 type SegmentDragState = {
   shapeId: TLShapeId
@@ -32,6 +32,25 @@ export function BezierEditModeHandler() {
   const DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
   const DOUBLE_CLICK_DISTANCE = 5 // pixels
 
+  // Listen for tool changes to exit edit mode
+  useEffect(() => {
+    const handleToolChange = () => {
+      const editingShape = editor.getCurrentPageShapes().find(
+        (shape) => shape.type === 'bezier' && shape.props.editMode
+      ) as BezierShape | undefined
+
+      if (editingShape && editor.getCurrentToolId() !== 'select') {
+        console.log('[BezierEditModeHandler] Tool changed, exiting edit mode')
+        BezierStateActions.exitEditMode(editor, editingShape)
+      }
+    }
+
+    return editor.store.listen(handleToolChange, {
+      source: 'user',
+      scope: 'all',
+    })
+  }, [editor])
+
   useEffect(() => {
     const container = editor.getContainer()
 
@@ -52,12 +71,22 @@ export function BezierEditModeHandler() {
       const shapePageBounds = editor.getShapePageBounds(editingShape.id)
       if (!shapePageBounds) return
 
+      // Check if click is outside the shape bounds (with padding) - exit edit mode
+      // Add padding to prevent accidental exits when clicking points at the edge
+      const zoom = editor.getZoomLevel()
+      const padding = BEZIER_BOUNDS.EDIT_MODE_EXIT_PADDING / zoom
+      const paddedBounds = shapePageBounds.clone().expand(padding)
+
+      if (!paddedBounds.containsPoint(pagePoint)) {
+        console.log('[BezierEditModeHandler] Click outside shape bounds, exiting edit mode')
+        BezierStateActions.exitEditMode(editor, editingShape)
+        return
+      }
+
       const localPoint = {
         x: pagePoint.x - shapePageBounds.x,
         y: pagePoint.y - shapePageBounds.y,
       }
-
-      const zoom = editor.getZoomLevel()
 
       // Detect double-click using position-based approach (like the old working version)
       const now = Date.now()

@@ -118,6 +118,7 @@ export const BEZIER_BOUNDS = {
   SINGLE_POINT_PADDING: 50,       // Padding (pixels) around single-point shapes to prevent jumping
   MULTI_POINT_PADDING: 10,        // Padding (pixels) around multi-point shapes for visual breathing room
   BOUNDS_CHANGE_THRESHOLD: 0.01,  // Minimum change (pixels) to trigger bounds recalculation
+  EDIT_MODE_EXIT_PADDING: 20,     // Padding (pixels) around shape bounds to prevent accidental exit when selecting edge points
 } as const
 
 /**
