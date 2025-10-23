@@ -4,7 +4,8 @@ import { Vec, type TLShapeId } from '@tldraw/editor'
 import { type BezierShape, type BezierPoint } from '../shared/bezierShape'
 import { BezierState, BezierStateActions } from '../shared/bezierState'
 import { BezierBounds } from '../shared/bezierBounds'
-import { bezierLog, BEZIER_BOUNDS } from '../shared/bezierConstants'
+import { BezierMath } from '../shared/bezierMath'
+import { bezierLog, BEZIER_BOUNDS, BEZIER_THRESHOLDS } from '../shared/bezierConstants'
 
 type SegmentDragState = {
   shapeId: TLShapeId
@@ -194,31 +195,52 @@ export function BezierEditModeHandler() {
         return isDoubleClick
       }
 
-      // Check if clicking on a control point FIRST (handles outside bounds)
+      // Evaluate control and anchor hits together so we can prefer the anchor when both overlap
       const controlPoint = BezierState.getControlPointAt(
         editingShape.props.points,
         localPoint,
         zoom
       )
 
-      if (controlPoint) {
-        console.log('[BezierEditModeHandler] Clicked on control point', controlPoint)
-        registerClick('control', controlPoint.pointIndex)
-        // Let tldraw's handle system manage control point dragging
-        return
-      }
-
-      // Check if clicking on an anchor point (higher priority than segments)
       const anchorIndex = BezierState.getAnchorPointAt(
         editingShape.props.points,
         localPoint,
         zoom
       )
 
-      // Handle anchor point interactions
-      if (anchorIndex !== -1) {
+      const anchorThreshold = BEZIER_THRESHOLDS.ANCHOR_POINT / zoom
+      const anchorDistance =
+        anchorIndex !== -1
+          ? BezierMath.getDistance(localPoint, editingShape.props.points[anchorIndex])
+          : Infinity
+
+      let controlDistance = Infinity
+      if (controlPoint) {
+        const point = editingShape.props.points[controlPoint.pointIndex]
+        const cp = controlPoint.type === 'cp1' ? point.cp1 : point.cp2
+        if (cp) {
+          controlDistance = BezierMath.getDistance(localPoint, cp)
+        }
+      }
+
+      const shouldHandleAnchor =
+        anchorIndex !== -1 &&
+        (controlDistance === Infinity ||
+          anchorDistance <= controlDistance ||
+          anchorDistance <= anchorThreshold * 0.5)
+
+      if (shouldHandleAnchor) {
         const isDoubleClick = registerClick('anchor', anchorIndex)
-        console.log('[BezierEditModeHandler] Clicked on anchor', anchorIndex, 'isDoubleClick:', isDoubleClick)
+        console.log(
+          '[BezierEditModeHandler] Clicked on anchor',
+          anchorIndex,
+          'isDoubleClick:',
+          isDoubleClick,
+          'controlDistance:',
+          controlDistance,
+          'anchorDistance:',
+          anchorDistance
+        )
 
         if (isDoubleClick) {
           console.log('[BezierEditModeHandler] DOUBLE-CLICK on anchor - toggling point type')
@@ -231,12 +253,21 @@ export function BezierEditModeHandler() {
 
         // Single click - handle point selection
         console.log('[BezierEditModeHandler] Single click on anchor - selecting')
-        BezierStateActions.handlePointSelection(
-          editor,
-          editingShape,
-          anchorIndex,
-          e.shiftKey
+        BezierStateActions.handlePointSelection(editor, editingShape, anchorIndex, e.shiftKey)
+        return
+      }
+
+      if (controlPoint) {
+        console.log(
+          '[BezierEditModeHandler] Clicked on control point',
+          controlPoint,
+          'anchorDistance:',
+          anchorDistance,
+          'controlDistance:',
+          controlDistance
         )
+        registerClick('control', controlPoint.pointIndex)
+        // Let tldraw's handle system manage control point dragging
         return
       }
 
