@@ -272,7 +272,7 @@ export class Creating extends StateNode {
       if (this.startPoint) {
         this.dragDistance = Vec.Dist(currentPoint, this.startPoint) * this.editor.getZoomLevel()
       }
-      
+
       if (this.points.length === 1 && !this.initialDragOccurred) {
         // Handle first point dragging - special case to ensure edit mode is active
         this.handleFirstPointDrag(currentPoint)
@@ -280,7 +280,7 @@ export class Creating extends StateNode {
         // Handle normal point dragging
         this.handleNormalPointDrag(currentPoint)
       }
-      
+
       this.updateShape()
     } else if (this.points.length > 0 && !hoveringStart && !this.isSnappedToStart) {
       // Show preview of next segment (but not when hovering over start point or snapped)
@@ -314,20 +314,20 @@ export class Creating extends StateNode {
         return
       }
       
-      // Check if we're currently snapped to start - if so, close immediately
+      // Check if we're currently snapped to start - if so, close without modifying handles
       if (this.isSnappedToStart && this.points.length > 2) {
-        this.closeCurve()
+        this.closeCurve(true) // skipSmoothHandles = true
         return
       }
-      
+
       // Check if clicking near the first point to close the curve (fallback for edge cases)
       if (this.points.length > 2 && !this.isSnappedToStart) {
         const firstPoint = this.points[0]
         const distToFirst = Vec.Dist(currentPoint, { x: firstPoint.x, y: firstPoint.y })
-        
+
         if (distToFirst < BEZIER_THRESHOLDS.CLOSE_CURVE / this.editor.getZoomLevel()) {
-          // Close the curve immediately (no drag)
-          this.closeCurve()
+          // Close the curve without modifying handles
+          this.closeCurve(true) // skipSmoothHandles = true
           return
         }
       }
@@ -651,12 +651,14 @@ export class Creating extends StateNode {
     this.updateShapeWithPoints(previewPoints)
   }
 
-  private closeCurve() {
+  private closeCurve(skipSmoothHandles = false) {
     if (this.points.length < 3) return
-    
-    // Add smooth closing handles before closing the curve
-    this.addSmoothClosingHandles()
-    
+
+    // Add smooth closing handles before closing the curve (unless skipped)
+    if (!skipSmoothHandles) {
+      this.addSmoothClosingHandles()
+    }
+
     // Use the actual user-created points directly (not from shape which includes preview)
     this.updateShapeWithPointsAndClosed(this.points, true)
     
