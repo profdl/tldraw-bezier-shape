@@ -572,10 +572,14 @@ export const BezierStateActions = {
     return updatedShape
   },
 
-  exitEditMode(editor: Editor, shape: BezierShape) {
+  exitEditMode(editor: Editor, shape: BezierShape, options?: { deselect?: boolean }) {
     const updatedShape = BezierState.exitEditMode(shape)
     editor.updateShape(updatedShape)
-    editor.setSelectedShapes([shape.id])
+    if (options?.deselect) {
+      editor.setSelectedShapes([])
+    } else {
+      editor.setSelectedShapes([shape.id])
+    }
     return updatedShape
   },
 

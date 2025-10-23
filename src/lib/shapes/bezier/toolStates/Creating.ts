@@ -434,7 +434,8 @@ export class Creating extends StateNode {
 
   private updateShape() {
     // Force edit mode when creating/dragging the first point or during any drag operation
-    const forceEditMode = (this.points.length === 1 && !this.initialDragOccurred) || this.isDragging
+    const shouldForceEditMode = (this.points.length === 1 && !this.initialDragOccurred) || this.isDragging
+    const editModeOverride = shouldForceEditMode || undefined // avoid forcing false to prevent edit-mode flicker
     
     // During drag operations, show preview of the curve being formed
     if (this.isDragging && this.points.length > 0 && this.currentPoint) {
@@ -451,10 +452,10 @@ export class Creating extends StateNode {
         })
       }
       
-      this.updateShapeWithPointsAndClosed(previewPoints, false, forceEditMode)
+      this.updateShapeWithPointsAndClosed(previewPoints, false, editModeOverride)
     } else {
       // Normal update without preview
-      this.updateShapeWithPointsAndClosed(this.points, false, forceEditMode)
+      this.updateShapeWithPointsAndClosed(this.points, false, editModeOverride)
     }
   }
 

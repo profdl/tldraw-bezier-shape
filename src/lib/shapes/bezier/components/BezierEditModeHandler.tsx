@@ -30,7 +30,7 @@ export function BezierEditModeHandler() {
   const lastClickPositionRef = useRef({ x: 0, y: 0 })
   const segmentDragRef = useRef<SegmentDragState | null>(null)
   const DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
-  const DOUBLE_CLICK_DISTANCE = 5 // pixels
+  const DOUBLE_CLICK_DISTANCE = 8 // pixels
 
   // Listen for tool changes and selection changes to exit edit mode
   useEffect(() => {
@@ -41,19 +41,23 @@ export function BezierEditModeHandler() {
 
       if (!editingShape) return
 
-      // Exit edit mode if tool changed away from select
-      if (editor.getCurrentToolId() !== 'select') {
+      const isTransientShape = Boolean((editingShape.meta as Record<string, unknown> | undefined)?.isTransient)
+
+      // Exit edit mode if tool changed away from select/bezier (only allow bezier tool while creating transient shapes)
+      const currentToolId = editor.getCurrentToolId()
+      const isAllowedTool = currentToolId === 'select' || (currentToolId === 'bezier' && isTransientShape)
+      if (!isAllowedTool) {
         console.log('[BezierEditModeHandler] Tool changed, exiting edit mode')
-        BezierStateActions.exitEditMode(editor, editingShape)
+        BezierStateActions.exitEditMode(editor, editingShape, { deselect: true })
         return
       }
 
       // Exit edit mode if shape is no longer selected
       const selectedShapes = editor.getSelectedShapes()
       const isStillSelected = selectedShapes.some(s => s.id === editingShape.id)
-      if (!isStillSelected) {
+      if (!isTransientShape && !isStillSelected) {
         console.log('[BezierEditModeHandler] Shape deselected, exiting edit mode')
-        BezierStateActions.exitEditMode(editor, editingShape)
+        BezierStateActions.exitEditMode(editor, editingShape, { deselect: true })
       }
     }
 
@@ -92,6 +96,7 @@ export function BezierEditModeHandler() {
 
       // Detect double-click using position-based approach (like the old working version)
       const now = Date.now()
+      const pointerDetail = typeof e.detail === 'number' ? e.detail : 0
       const currentPosition = { x: e.clientX, y: e.clientY }
       const timeSinceLastClick = now - lastClickTimeRef.current
       const distanceFromLastClick = Math.sqrt(
@@ -99,8 +104,9 @@ export function BezierEditModeHandler() {
         Math.pow(currentPosition.y - lastClickPositionRef.current.y, 2)
       )
       const isDoubleClick =
-        timeSinceLastClick < DOUBLE_CLICK_THRESHOLD &&
-        distanceFromLastClick < DOUBLE_CLICK_DISTANCE
+        pointerDetail === 2 ||
+        (timeSinceLastClick < DOUBLE_CLICK_THRESHOLD &&
+          distanceFromLastClick < DOUBLE_CLICK_DISTANCE)
 
       console.log('[BezierEditModeHandler] Click detection:', {
         timeSinceLastClick,
@@ -210,22 +216,21 @@ export function BezierEditModeHandler() {
         return
       }
 
-      // Click not on any anchor or segment - check if outside bounds to exit edit mode
+      // Click not on any anchor or segment - check if user hit the shape geometry
       const padding = BEZIER_BOUNDS.EDIT_MODE_EXIT_PADDING / zoom
-      const paddedBounds = shapePageBounds.clone().expand(padding)
+      const shapeHit = editor.getShapeAtPoint(pagePoint, {
+        hitInside: true,
+        margin: padding,
+        filter: (shape) => shape.id === editingShape.id,
+      })
 
-      if (!paddedBounds.containsPoint(pagePoint)) {
-        console.log('[BezierEditModeHandler] Click outside shape bounds, exiting edit mode')
-        BezierStateActions.exitEditMode(editor, editingShape)
-        // Prevent event from bubbling to allow tldraw to handle the click normally
-        // (e.g., selecting another shape or clicking on canvas)
-        e.preventDefault()
-        e.stopPropagation()
-      } else {
-        console.log('[BezierEditModeHandler] Click inside bounds but not on shape element - staying in edit mode')
-        // Don't exit - allow clicking inside bounds without hitting a specific element
-        // This prevents accidental exits when trying to select edge points
+      if (!shapeHit) {
+        console.log('[BezierEditModeHandler] Click outside shape geometry, exiting edit mode')
+        BezierStateActions.exitEditMode(editor, editingShape, { deselect: true })
+        return
       }
+
+      console.log('[BezierEditModeHandler] Click inside shape area without target - staying in edit mode')
     }
 
     const handlePointerMove = (e: PointerEvent) => {
