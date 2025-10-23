@@ -42,7 +42,63 @@ I've implemented a near production-ready bezier pen tool for tldraw with Illustr
 
 ## ❓ Architectural Questions for tldraw Team
 
-### Question 1: Edit Mode State Storage ⚠️ **HIGH PRIORITY**
+### Question 1: Toolbar Integration Pattern 🔶 **MEDIUM PRIORITY**
+
+**Location:** [`src/App.tsx:40-66`](src/App.tsx#L40-L66)
+
+**Current Implementation:**
+
+```typescript
+const components: TLComponents = {
+  Toolbar: (props) => {
+    const tools = useTools()
+    const isBezierSelected = useIsToolSelected(tools['bezier'])
+    return (
+      <DefaultToolbar {...props}>
+        <TldrawUiMenuItem {...tools['select']} isSelected={useIsToolSelected(tools['select'])} />
+        <TldrawUiMenuItem {...tools['hand']} isSelected={useIsToolSelected(tools['hand'])} />
+        <TldrawUiMenuItem {...tools['draw']} isSelected={useIsToolSelected(tools['draw'])} />
+        <TldrawUiMenuItem {...tools['eraser']} isSelected={useIsToolSelected(tools['eraser'])} />
+        <TldrawUiMenuItem {...tools['bezier']} isSelected={isBezierSelected} />
+        {/* ... all other default tools hardcoded ... */}
+      </DefaultToolbar>
+    )
+  },
+}
+```
+
+**Why we did this:**
+
+- Need to add the bezier tool to the toolbar UI
+- No apparent API to inject a single tool into the default toolbar
+- Fully rebuilding the toolbar was the only discoverable pattern
+
+**Concerns:**
+
+- Completely rebuilds default toolbar just to inject one item
+- Will diverge from tldraw defaults the moment core adjusts its toolbar
+- Maintenance burden: must manually track tldraw's toolbar changes
+- Fragile: breaks if tldraw adds/removes/reorders default tools
+- Every custom tool would need to duplicate this entire menu structure
+
+**What we need:**
+
+- Composable toolbar API that allows inserting tools at specific positions
+- Pattern like: `DefaultToolbar.insertBefore('arrow', tools['bezier'])`
+- Or: Higher-level toolbar configuration without manual MenuItem assembly
+- Way to extend default toolbar without forking its entire implementation
+
+**Question:** Is there a recommended pattern for extending the default toolbar with custom tools, or should tldraw provide a more composable toolbar API to avoid full menu reconstruction?
+
+**Related concerns:**
+
+- Same issue exists for keyboard shortcuts panel and other tool listings
+- Forces duplication of tldraw's internal tool ordering decisions
+- Makes custom tools difficult to maintain across tldraw versions
+
+---
+
+### Question 2: Edit Mode State Storage ⚠️ **HIGH PRIORITY**
 
 **Location:** [`src/lib/shapes/bezier/shared/bezierShape.ts:26-90`](src/lib/shapes/bezier/shared/bezierShape.ts#L26-L90)
 
@@ -184,6 +240,62 @@ private readonly DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
 
 - Double-clicking an anchor point toggles it between smooth/corner
 - Double-clicking a segment adds a new point at that location
+
+---
+
+### Question 4: Toolbar Integration Pattern 🔶 **MEDIUM PRIORITY**
+
+**Location:** [`src/App.tsx:40-66`](src/App.tsx#L40-L66)
+
+**Current Implementation:**
+
+```typescript
+const components: TLComponents = {
+  Toolbar: (props) => {
+    const tools = useTools()
+    const isBezierSelected = useIsToolSelected(tools['bezier'])
+    return (
+      <DefaultToolbar {...props}>
+        <TldrawUiMenuItem {...tools['select']} isSelected={useIsToolSelected(tools['select'])} />
+        <TldrawUiMenuItem {...tools['hand']} isSelected={useIsToolSelected(tools['hand'])} />
+        <TldrawUiMenuItem {...tools['draw']} isSelected={useIsToolSelected(tools['draw'])} />
+        <TldrawUiMenuItem {...tools['eraser']} isSelected={useIsToolSelected(tools['eraser'])} />
+        <TldrawUiMenuItem {...tools['bezier']} isSelected={isBezierSelected} />
+        {/* ... all other default tools hardcoded ... */}
+      </DefaultToolbar>
+    )
+  },
+}
+```
+
+**Why we did this:**
+
+- Need to add the bezier tool to the toolbar UI
+- No apparent API to inject a single tool into the default toolbar
+- Fully rebuilding the toolbar was the only discoverable pattern
+
+**Concerns:**
+
+- Completely rebuilds default toolbar just to inject one item
+- Will diverge from tldraw defaults the moment core adjusts its toolbar
+- Maintenance burden: must manually track tldraw's toolbar changes
+- Fragile: breaks if tldraw adds/removes/reorders default tools
+- Every custom tool would need to duplicate this entire menu structure
+
+**What we need:**
+
+- Composable toolbar API that allows inserting tools at specific positions
+- Pattern like: `DefaultToolbar.insertBefore('arrow', tools['bezier'])`
+- Or: Higher-level toolbar configuration without manual MenuItem assembly
+- Way to extend default toolbar without forking its entire implementation
+
+**Question:** Is there a recommended pattern for extending the default toolbar with custom tools, or should tldraw provide a more composable toolbar API to avoid full menu reconstruction?
+
+**Related concerns:**
+
+- Same issue exists for keyboard shortcuts panel and other tool listings
+- Forces duplication of tldraw's internal tool ordering decisions
+- Makes custom tools difficult to maintain across tldraw versions
 
 ---
 
