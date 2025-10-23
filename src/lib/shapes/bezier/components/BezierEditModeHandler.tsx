@@ -135,6 +135,17 @@ export function BezierEditModeHandler() {
   useEffect(() => {
     const container = editor.getContainer()
 
+    const handleContextMenu = (e: MouseEvent) => {
+      // Check if we're in edit mode
+      const editingShape = getEditingShape()
+      if (editingShape) {
+        // Prevent context menu from appearing in edit mode
+        e.preventDefault()
+        e.stopPropagation()
+        bezierLog('EditMode', 'Context menu prevented in edit mode')
+      }
+    }
+
     const handlePointerDown = (e: PointerEvent) => {
       // Find the bezier shape currently in edit mode
       const editingShape = getEditingShape()
@@ -416,16 +427,18 @@ export function BezierEditModeHandler() {
     }
 
     // Use capture phase to intercept events before tldraw's handlers
+    container.addEventListener('contextmenu', handleContextMenu, { capture: true })
     container.addEventListener('pointerdown', handlePointerDown, { capture: true })
     container.addEventListener('pointermove', handlePointerMove, { capture: false })
     container.addEventListener('pointerup', handlePointerUp, { capture: false })
 
     return () => {
+      container.removeEventListener('contextmenu', handleContextMenu, { capture: true })
       container.removeEventListener('pointerdown', handlePointerDown, { capture: true })
       container.removeEventListener('pointermove', handlePointerMove, { capture: false })
       container.removeEventListener('pointerup', handlePointerUp, { capture: false })
     }
-  }, [editor])
+  }, [editor, getEditingShape])
 
   return null
 }
