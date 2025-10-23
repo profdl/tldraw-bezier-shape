@@ -14,6 +14,8 @@ type SegmentDragState = {
   isClosed: boolean
 }
 
+type ClickTargetType = 'anchor' | 'segment' | 'control' | 'canvas' | 'none'
+
 /**
  * Component to handle edit mode interactions using DOM-level event capture.
  *
@@ -26,8 +28,19 @@ type SegmentDragState = {
  */
 export function BezierEditModeHandler() {
   const editor = useEditor()
-  const lastClickTimeRef = useRef(0)
-  const lastClickPositionRef = useRef({ x: 0, y: 0 })
+  const lastClickRef = useRef<{
+    time: number
+    position: { x: number; y: number }
+    type: ClickTargetType
+    id: number | null
+    count: number
+  }>({
+    time: 0,
+    position: { x: 0, y: 0 },
+    type: 'none',
+    id: null,
+    count: 0,
+  })
   const segmentDragRef = useRef<SegmentDragState | null>(null)
   const DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
   const DOUBLE_CLICK_DISTANCE = 8 // pixels
@@ -94,31 +107,43 @@ export function BezierEditModeHandler() {
         y: pagePoint.y - shapePageBounds.y,
       }
 
-      // Detect double-click using position-based approach (like the old working version)
       const now = Date.now()
-      const pointerDetail = typeof e.detail === 'number' ? e.detail : 0
       const currentPosition = { x: e.clientX, y: e.clientY }
-      const timeSinceLastClick = now - lastClickTimeRef.current
-      const distanceFromLastClick = Math.sqrt(
-        Math.pow(currentPosition.x - lastClickPositionRef.current.x, 2) +
-        Math.pow(currentPosition.y - lastClickPositionRef.current.y, 2)
-      )
-      const isDoubleClick =
-        pointerDetail === 2 ||
-        (timeSinceLastClick < DOUBLE_CLICK_THRESHOLD &&
-          distanceFromLastClick < DOUBLE_CLICK_DISTANCE)
 
-      console.log('[BezierEditModeHandler] Click detection:', {
-        timeSinceLastClick,
-        distanceFromLastClick,
-        isDoubleClick,
-        threshold: DOUBLE_CLICK_THRESHOLD,
-        distanceThreshold: DOUBLE_CLICK_DISTANCE,
-      })
+      const registerClick = (type: ClickTargetType, id: number | null) => {
+        const lastClick = lastClickRef.current
+        const timeSinceLastClick = now - lastClick.time
+        const distanceFromLastClick = Math.hypot(
+          currentPosition.x - lastClick.position.x,
+          currentPosition.y - lastClick.position.y
+        )
+        const isSameTarget = lastClick.type === type && lastClick.id === id
+        const isWithinThreshold =
+          timeSinceLastClick < DOUBLE_CLICK_THRESHOLD &&
+          distanceFromLastClick < DOUBLE_CLICK_DISTANCE
 
-      // Always update tracking state for next click
-      lastClickTimeRef.current = now
-      lastClickPositionRef.current = currentPosition
+        const clickCount = isSameTarget && isWithinThreshold ? lastClick.count + 1 : 1
+        const isDoubleClick = clickCount === 2
+
+        lastClickRef.current = {
+          time: now,
+          position: currentPosition,
+          type,
+          id,
+          count: isDoubleClick ? 0 : clickCount,
+        }
+
+        console.log('[BezierEditModeHandler] Click detection:', {
+          timeSinceLastClick,
+          distanceFromLastClick,
+          clickCount,
+          isDoubleClick,
+          targetType: type,
+          targetId: id,
+        })
+
+        return isDoubleClick
+      }
 
       // Check if clicking on a control point FIRST (handles outside bounds)
       const controlPoint = BezierState.getControlPointAt(
@@ -129,6 +154,7 @@ export function BezierEditModeHandler() {
 
       if (controlPoint) {
         console.log('[BezierEditModeHandler] Clicked on control point', controlPoint)
+        registerClick('control', controlPoint.pointIndex)
         // Let tldraw's handle system manage control point dragging
         return
       }
@@ -142,6 +168,7 @@ export function BezierEditModeHandler() {
 
       // Handle anchor point interactions
       if (anchorIndex !== -1) {
+        const isDoubleClick = registerClick('anchor', anchorIndex)
         console.log('[BezierEditModeHandler] Clicked on anchor', anchorIndex, 'isDoubleClick:', isDoubleClick)
 
         if (isDoubleClick) {
@@ -173,6 +200,7 @@ export function BezierEditModeHandler() {
       )
 
       if (segmentInfo) {
+        const isDoubleClick = registerClick('segment', segmentInfo.segmentIndex)
         console.log('[BezierEditModeHandler] Clicked on segment', segmentInfo.segmentIndex, 'isDoubleClick:', isDoubleClick, 'altKey:', e.altKey)
 
         if (isDoubleClick) {
@@ -225,11 +253,13 @@ export function BezierEditModeHandler() {
       })
 
       if (!shapeHit) {
+        registerClick('canvas', null)
         console.log('[BezierEditModeHandler] Click outside shape geometry, exiting edit mode')
         BezierStateActions.exitEditMode(editor, editingShape, { deselect: true })
         return
       }
 
+      registerClick('canvas', null)
       console.log('[BezierEditModeHandler] Click inside shape area without target - staying in edit mode')
     }
 

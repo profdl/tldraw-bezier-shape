@@ -46,6 +46,7 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
   // may be unreliable if instances are shared/recreated.
   private lastClickTime = 0
   private lastClickedHandleId: string | null = null
+  private lastClickCount = 0
   private readonly DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
 
   override getDefaultProps(): BezierShape['props'] {
@@ -318,12 +319,14 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
       // Detect double-click on anchor point
       const now = Date.now()
       const handleId = `anchor-${anchorIndex}`
-      const isDoubleClick =
-        now - this.lastClickTime < this.DOUBLE_CLICK_THRESHOLD &&
-        this.lastClickedHandleId === handleId
+      const withinThreshold = now - this.lastClickTime < this.DOUBLE_CLICK_THRESHOLD
+      const sameHandle = this.lastClickedHandleId === handleId
+      const clickCount = withinThreshold && sameHandle ? this.lastClickCount + 1 : 1
+      const isDoubleClick = clickCount === 2
 
       this.lastClickTime = now
       this.lastClickedHandleId = handleId
+      this.lastClickCount = isDoubleClick ? 0 : clickCount
 
       if (isDoubleClick) {
         bezierLog('Interaction', 'DOUBLE-CLICK detected on anchor', anchorIndex)
@@ -360,6 +363,7 @@ export class BezierShapeUtil extends FlippableShapeUtil<BezierShape> {
 
     // Reset double-click tracking if clicking elsewhere
     this.lastClickedHandleId = null
+    this.lastClickCount = 0
   }
 
   // Double-click handler for both entering edit mode and edit mode interactions
