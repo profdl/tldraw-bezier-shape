@@ -13,7 +13,6 @@ import {
   BEZIER_TIMING,
   BEZIER_BOUNDS
 } from '../shared/bezierConstants'
-import { useTransientShapeStore } from '../../../../store/transientShapeStore'
 
 interface DragHandleOptions {
   startPoint: Vec
@@ -147,8 +146,7 @@ export class Creating extends StateNode {
     // Normal creation mode (not extending)
     this.isExtendingShape = false
     this.extendFromStart = false
-    const { startSession } = useTransientShapeStore.getState()
-    this.shapeId = startSession('bezier', 'bezier')
+    this.shapeId = createShapeId()
     this.points = []
     this.isDragging = false
     this.isHoveringStart = false
@@ -638,8 +636,6 @@ export class Creating extends StateNode {
           transientToolId: 'bezier'
         }
       })
-      const { bindShape } = useTransientShapeStore.getState()
-      bindShape(this.shapeId)
     }
   }
 
@@ -815,7 +811,6 @@ export class Creating extends StateNode {
     }
 
     if (!this.isExtendingShape) {
-      const transientStore = useTransientShapeStore.getState()
       const shape = this.editor.getShape(this.shapeId) as BezierShape | undefined
       if (shape) {
         const nextMeta = { ...(shape.meta ?? {}) }
@@ -827,10 +822,6 @@ export class Creating extends StateNode {
           type: 'bezier',
           meta: nextMeta
         })
-      }
-
-      if (transientStore.session && transientStore.session.shapeId === this.shapeId) {
-        transientStore.finalizeSession()
       }
     }
 
@@ -888,10 +879,6 @@ export class Creating extends StateNode {
   private cancel() {
     // Delete the shape being created
     this.editor.deleteShape(this.shapeId)
-    const transientStore = useTransientShapeStore.getState()
-    if (!this.isExtendingShape && transientStore.session && transientStore.session.shapeId === this.shapeId) {
-      transientStore.cancelSession()
-    }
     this.parent.transition('idle')
   }
 
