@@ -12,11 +12,39 @@ import {
 	type TLDefaultSizeStyle,
 } from '@tldraw/tlschema'
 
-/** @public */
+/**
+ * A point on a bezier curve with optional control points.
+ *
+ * @public
+ * @remarks
+ * Control points define the curve shape between anchor points:
+ * - `cp1`: Incoming control point (affects curve before the point)
+ * - `cp2`: Outgoing control point (affects curve after the point)
+ * - If both cp1 and cp2 are present and symmetrical, the point is "smooth"
+ * - If control points are absent or asymmetric, the point is a "corner"
+ *
+ * @example
+ * ```ts
+ * // Corner point (no control points)
+ * const corner: BezierPoint = { x: 100, y: 100 }
+ *
+ * // Smooth point with symmetrical control points
+ * const smooth: BezierPoint = {
+ *   x: 100,
+ *   y: 100,
+ *   cp1: { x: 80, y: 100 },
+ *   cp2: { x: 120, y: 100 }
+ * }
+ * ```
+ */
 export interface BezierPoint {
+	/** X coordinate of the anchor point */
 	x: number
+	/** Y coordinate of the anchor point */
 	y: number
+	/** Incoming control point (affects curve before this point) */
 	cp1?: { x: number; y: number }
+	/** Outgoing control point (affects curve after this point) */
 	cp2?: { x: number; y: number }
 }
 
@@ -89,7 +117,46 @@ export interface BezierShapeProps {
 	selectedSegmentIndex?: number
 }
 
-/** @public */
+/**
+ * A bezier path shape with support for smooth and corner points.
+ *
+ * @public
+ * @remarks
+ * Bezier shapes are vector paths composed of anchor points connected by
+ * cubic Bezier curves. They can be open (path) or closed (shape with fill).
+ *
+ * Features:
+ * - Click-drag to create smooth points
+ * - Click without drag for corner points
+ * - Double-click to enter edit mode
+ * - Full style support (color, dash, size, fill)
+ * - Transform operations (resize, rotate, flip)
+ *
+ * @example
+ * ```ts
+ * // Create a simple bezier shape
+ * editor.createShape({
+ *   type: 'bezier',
+ *   x: 100,
+ *   y: 100,
+ *   props: {
+ *     w: 200,
+ *     h: 200,
+ *     points: [
+ *       { x: 0, y: 0 },
+ *       { x: 100, y: 50, cp1: { x: 50, y: 0 }, cp2: { x: 150, y: 50 } },
+ *       { x: 200, y: 0 }
+ *     ],
+ *     isClosed: false,
+ *     color: 'black',
+ *     dash: 'solid',
+ *     size: 'm',
+ *     fill: 'none',
+ *     scale: 1
+ *   }
+ * })
+ * ```
+ */
 export type BezierShape = TLBaseShape<'bezier', BezierShapeProps>
 
 /** @public */

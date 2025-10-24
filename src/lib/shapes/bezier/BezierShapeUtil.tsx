@@ -30,9 +30,35 @@ import {
 } from './shared/bezierShape'
 
 /**
- * A point on a bezier curve with optional control points.
+ * Shape utility for bezier path shapes.
  *
  * @public
+ * @remarks
+ * This utility manages the lifecycle and rendering of bezier shapes in tldraw.
+ * It implements the standard shape utility interface with custom behavior for:
+ * - Path rendering using tldraw's PathBuilder system
+ * - Edit mode with point selection and manipulation
+ * - Handle-based control point editing
+ * - Transform operations (resize, rotate, flip)
+ * - Bounds calculation and shape normalization
+ *
+ * The utility follows tldraw's patterns for shape utils, extending BaseBoxShapeUtil
+ * and integrating with the standard style system (color, dash, size, fill).
+ *
+ * Key methods:
+ * - `component`: Renders the shape using SVG paths
+ * - `indicator`: Shows selection outline
+ * - `getHandles`: Returns interactive handles for editing
+ * - `onHandleDrag`: Updates shape when handles are dragged
+ * - `onDoubleClick`: Enters edit mode for point-level editing
+ *
+ * @example
+ * ```ts
+ * // Register with tldraw
+ * const shapeUtils = [BezierShapeUtil]
+ *
+ * <Tldraw shapeUtils={shapeUtils} />
+ * ```
  */
 export class BezierShapeUtil extends BaseBoxShapeUtil<BezierShape> {
   static override type = 'bezier' as const

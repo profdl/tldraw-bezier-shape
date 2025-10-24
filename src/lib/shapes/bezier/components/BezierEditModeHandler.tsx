@@ -79,21 +79,20 @@ export function BezierEditModeHandler() {
 
       if (!editingShape) return
 
-      const isTransientShape = Boolean((editingShape.meta as Record<string, unknown> | undefined)?.isTransient)
-
-      // Exit edit mode if tool changed away from select/bezier (only allow bezier tool while creating transient shapes)
+      // Exit edit mode if tool changed away from select/bezier
       const currentToolId = editor.getCurrentToolId()
-      const isAllowedTool = currentToolId === 'select' || (currentToolId === 'bezier' && isTransientShape)
+      const isAllowedTool = currentToolId === 'select' || currentToolId === 'bezier'
       if (!isAllowedTool) {
         bezierLog('EditMode', 'Tool changed, exiting edit mode')
         BezierStateActions.exitEditMode(editor, editingShape, { deselect: true })
         return
       }
 
-      // Exit edit mode if shape is no longer selected
+      // Exit edit mode if shape is no longer selected (unless bezier tool is active)
       const selectedShapes = editor.getSelectedShapes()
       const isStillSelected = selectedShapes.some(s => s.id === editingShape.id)
-      if (!isTransientShape && !isStillSelected) {
+      const isBezierToolActive = currentToolId === 'bezier'
+      if (!isBezierToolActive && !isStillSelected) {
         bezierLog('EditMode', 'Shape deselected, exiting edit mode')
         BezierStateActions.exitEditMode(editor, editingShape, { deselect: true })
       }

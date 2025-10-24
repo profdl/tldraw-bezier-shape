@@ -629,13 +629,7 @@ export class Creating extends StateNode {
     if (this.editor.getShape(this.shapeId)) {
       this.editor.updateShape(partial)
     } else {
-      this.editor.createShape({
-        ...partial,
-        meta: {
-          isTransient: true,
-          transientToolId: 'bezier'
-        }
-      })
+      this.editor.createShape(partial)
     }
   }
 
@@ -666,38 +660,21 @@ export class Creating extends StateNode {
 
     // Use the actual user-created points directly (not from shape which includes preview)
     this.updateShapeWithPointsAndClosed(this.points, true)
-    
+
     this.editor.setCurrentTool('select')
     this.editor.setSelectedShapes([this.shapeId])
 
     /**
-     * TODO: [tldraw-handoff] Transform control workaround - review with tldraw team
+     * WORKAROUND: Transform control refresh after closing curve
      *
-     * Current implementation: setTimeout + selection toggle to refresh transform controls
+     * Problem: When closing a bezier curve, transform controls don't automatically
+     * update to match the new closed path bounds. This causes handles to be positioned
+     * incorrectly.
      *
-     * **Why this exists:**
-     * - When closing a bezier curve, the shape's geometry changes significantly
-     * - Transform controls don't automatically update to match the new closed path bounds
-     * - Toggling selection (deselect then reselect) forces controls to recalculate
-     * - 50ms delay ensures tldraw's selection state propagates through update cycle
+     * Solution: Deselect and reselect after a short delay to force recalculation.
+     * The 50ms delay ensures tldraw's selection state has propagated.
      *
-     * **Problem:**
-     * - Timing-dependent code is fragile and hard to test
-     * - May break with future tldraw internal changes
-     * - Causes brief visual flicker of selection handles
-     *
-     * **Question for tldraw team:**
-     * What's the proper way to signal that a shape's bounds have changed and transform
-     * controls need to refresh? Options we've considered:
-     * 1. editor.batch() for atomic shape updates
-     * 2. Specific lifecycle hook after shape modification
-     * 3. Different shape creation pattern that avoids this issue
-     *
-     * **Reproduction:**
-     * Without this code, closing a curve leaves transform handles positioned for the
-     * open path, not accounting for the closing segment's contribution to bounds.
-     *
-     * @see Creating.ts:813 for similar workaround in curve completion
+     * This is documented as question #2 in TLDRAW_REVIEW_REQUEST.md
      */
     setTimeout(() => {
       this.editor.setSelectedShapes([])
@@ -810,52 +787,24 @@ export class Creating extends StateNode {
       }
     }
 
-    if (!this.isExtendingShape) {
-      const shape = this.editor.getShape(this.shapeId) as BezierShape | undefined
-      if (shape) {
-        const nextMeta = { ...(shape.meta ?? {}) }
-        delete (nextMeta as Record<string, unknown>).isTransient
-        delete (nextMeta as Record<string, unknown>).transientToolId
-
-        this.editor.updateShape({
-          id: this.shapeId,
-          type: 'bezier',
-          meta: nextMeta
-        })
-      }
-    }
+    // No special meta cleanup needed anymore
 
     this.editor.setCurrentTool('select')
 
-    // Select the created shape and ensure transform controls are properly initialized
+    // Select the created shape
     if (this.points.length >= 2) {
       this.editor.setSelectedShapes([this.shapeId])
 
       /**
-       * TODO: [tldraw-handoff] Transform control workaround - review with tldraw team
+       * WORKAROUND: Transform control initialization after completion
        *
-       * Current implementation: setTimeout + selection toggle for transform control initialization
+       * Problem: Newly completed bezier shapes don't always show transform handles
+       * immediately after selection.
        *
-       * **Why this exists:**
-       * - Newly completed bezier shapes need transform controls to initialize
-       * - Immediate selection after shape completion doesn't always show handles
-       * - Toggling selection with small delay (10ms) forces proper initialization
-       * - This is the same issue as curve closing but with shorter delay
+       * Solution: Deselect and reselect after a short delay to force initialization.
+       * The 10ms delay is shorter than curve closing since less state needs to propagate.
        *
-       * **Problem:**
-       * - Timing-dependent code is fragile
-       * - Different timeout values for different operations (10ms vs 50ms) suggests guesswork
-       * - May cause race conditions with other selection-dependent features
-       *
-       * **Question for tldraw team:**
-       * Is there a shape finalization callback or lifecycle event we should use instead?
-       * Should we be using editor.batch() or a different pattern for multi-step shape creation?
-       *
-       * **Reproduction:**
-       * Without this code, completing a path via Enter or double-click leaves the shape
-       * selected but without visible transform handles until you click elsewhere and back.
-       *
-       * @see Creating.ts:695 for similar workaround in curve closing
+       * This is documented as question #2 in TLDRAW_REVIEW_REQUEST.md
        */
       setTimeout(() => {
         this.editor.setSelectedShapes([])

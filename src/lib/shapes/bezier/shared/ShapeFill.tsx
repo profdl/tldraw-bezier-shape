@@ -12,7 +12,7 @@ import {
   useValue,
 } from '@tldraw/editor'
 import React from 'react'
-import { useGetHashPatternZoomName } from './defaultStyleDefs'
+import { useGetHashPatternZoomName } from './patternDefs'
 
 interface ShapeFillProps {
   d: string

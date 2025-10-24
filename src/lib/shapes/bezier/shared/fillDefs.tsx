@@ -9,7 +9,7 @@ import {
   TLShapeUtilCanvasSvgDef,
   useUniqueSafeId,
 } from '@tldraw/editor'
-import { PatternFillDefForCanvas, useGetHashPatternZoomName } from './defaultStyleDefs'
+import { PatternFillDefForCanvas, useGetHashPatternZoomName } from './patternDefs'
 import { useDefaultColorTheme } from '../../../../hooks/useDefaultColorTheme'
 
 function HashPatternForExport() {

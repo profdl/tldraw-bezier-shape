@@ -1,10 +1,11 @@
+/**
+ * Pattern fill definitions for bezier shapes.
+ * Simplified version that doesn't rely on tldraw internals.
+ */
 import {
   DefaultColorThemePalette,
   TLDefaultColorTheme,
-  debugFlags,
-  last,
   suffixSafeId,
-  tlenv,
   useEditor,
   useSharedSafeId,
   useValue,
@@ -23,7 +24,10 @@ const generateImage = (dpr: number, currentZoom: number, darkMode: boolean) => {
     canvasEl.height = size
 
     const ctx = canvasEl.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {
+      reject(new Error('Could not get canvas context'))
+      return
+    }
 
     ctx.fillStyle = darkMode
       ? DefaultColorThemePalette.darkMode.solid
@@ -51,8 +55,8 @@ const generateImage = (dpr: number, currentZoom: number, darkMode: boolean) => {
     ctx.stroke()
 
     canvasEl.toBlob((blob) => {
-      if (!blob || debugFlags.throwToBlob.get()) {
-        reject()
+      if (!blob) {
+        reject(new Error('Failed to create blob'))
       } else {
         resolve(blob)
       }
@@ -121,8 +125,8 @@ function getPatternLodsToGenerate(maxZoom: number) {
 function getDefaultPatterns(maxZoom: number): PatternDef[] {
   const defaultPixels = getDefaultPixels()
   return getPatternLodsToGenerate(maxZoom).flatMap((zoom) => [
-    { zoom, url: defaultPixels.white, theme: 'light' },
-    { zoom, url: defaultPixels.black, theme: 'dark' },
+    { zoom, url: defaultPixels.white, theme: 'light' as const },
+    { zoom, url: defaultPixels.black, theme: 'dark' as const },
   ])
 }
 
@@ -131,9 +135,13 @@ function usePattern() {
   const dpr = useValue('devicePixelRatio', () => editor.getInstanceState().devicePixelRatio, [
     editor,
   ])
-  const maxZoom = useValue('maxZoom', () => Math.ceil(last(editor.getCameraOptions().zoomSteps)!), [
-    editor,
-  ])
+
+  // Get max zoom from camera options
+  const maxZoom = useValue('maxZoom', () => {
+    const zoomSteps = editor.getCameraOptions().zoomSteps
+    return Math.ceil(zoomSteps[zoomSteps.length - 1])
+  }, [editor])
+
   const [isReady, setIsReady] = useState(false)
   const [backgroundUrls, setBackgroundUrls] = useState<PatternDef[]>(() =>
     getDefaultPatterns(maxZoom)
@@ -150,12 +158,12 @@ function usePattern() {
       getPatternLodsToGenerate(maxZoom).flatMap<Promise<PatternDef>>((zoom) => [
         generateImage(dpr, zoom, false).then((blob) => ({
           zoom,
-          theme: 'light',
+          theme: 'light' as const,
           url: URL.createObjectURL(blob),
         })),
         generateImage(dpr, zoom, true).then((blob) => ({
           zoom,
-          theme: 'dark',
+          theme: 'dark' as const,
           url: URL.createObjectURL(blob),
         })),
       ])
@@ -200,26 +208,18 @@ function usePattern() {
   return { defs, isReady }
 }
 
-function findHtmlLayerParent(element: Element): HTMLElement | null {
-  if (element.classList.contains('tl-html-layer')) return element as HTMLElement
-  if (element.parentElement) return findHtmlLayerParent(element.parentElement)
-  return null
-}
-
 export function PatternFillDefForCanvas() {
   const editor = useEditor()
   const containerRef = useRef<SVGGElement>(null)
   const { defs, isReady } = usePattern()
 
   useEffect(() => {
-    if (isReady && tlenv.isSafari) {
-      const htmlLayer = findHtmlLayerParent(containerRef.current!)
-      if (htmlLayer) {
-        // Wait for `patternContext` to be picked up
+    if (isReady) {
+      // Force Safari to re-render pattern fills
+      const htmlLayer = containerRef.current?.closest('.tl-html-layer') as HTMLElement | null
+      if (htmlLayer && navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome')) {
         editor.timers.requestAnimationFrame(() => {
           htmlLayer.style.display = 'none'
-
-          // Wait for 'display = "none"' to take effect
           editor.timers.requestAnimationFrame(() => {
             htmlLayer.style.display = ''
           })
