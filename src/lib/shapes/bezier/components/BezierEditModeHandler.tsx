@@ -186,15 +186,8 @@ export function BezierEditModeHandler() {
       })
 
       const pagePoint = editor.screenToPage({ x: e.clientX, y: e.clientY })
-      const shapePageBounds = editor.getShapePageBounds(editingShape.id)
-      if (!shapePageBounds) return
-
       const zoom = editor.getZoomLevel()
-
-      const localPoint = {
-        x: pagePoint.x - shapePageBounds.x,
-        y: pagePoint.y - shapePageBounds.y,
-      }
+      const localPoint = editor.getPointInShapeSpace(editingShape, pagePoint)
 
       const now = Date.now()
       const currentPosition = { x: e.clientX, y: e.clientY }
@@ -371,15 +364,8 @@ export function BezierEditModeHandler() {
       }
 
       const pagePoint = editor.screenToPage({ x: e.clientX, y: e.clientY })
-      const shapePageBounds = editor.getShapePageBounds(shape.id)
-      if (!shapePageBounds) return
-
-      const localPoint = {
-        x: pagePoint.x - shapePageBounds.x,
-        y: pagePoint.y - shapePageBounds.y,
-      }
-
-      const delta = Vec.Sub(new Vec(localPoint.x, localPoint.y), drag.initialLocalPoint)
+      const localPoint = editor.getPointInShapeSpace(shape, pagePoint)
+      const delta = Vec.Sub(localPoint, drag.initialLocalPoint)
 
       // Use centralized segment drag function from BezierState
       const updatedShape = BezierState.updateSegmentDrag(shape, drag.segmentIndex, drag.initialPoints, delta)
