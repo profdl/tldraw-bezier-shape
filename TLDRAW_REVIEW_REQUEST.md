@@ -2,7 +2,7 @@
 
 ## Overview
 
-I've implemented a near production-ready bezier pen tool for tldraw with Illustrator/Figma-style vector path creation and editing. The implementation is feature-complete and tested, but we have **3 architectural questions** that need your guidance before you continue and finalize the code.
+I've implemented a near production-ready bezier pen tool for tldraw with Illustrator/Figma-style vector path creation and editing. The implementation is feature-complete and tested, but I have **3 architectural questions** that need your guidance before you continue and finalize the code.
 
 **Repository:** tldraw-bezier-shape
 **Build Status:** ✅ Compiles with no TypeScript errors
@@ -51,23 +51,35 @@ I've implemented a near production-ready bezier pen tool for tldraw with Illustr
 ```typescript
 const components: TLComponents = {
   Toolbar: (props) => {
-    const tools = useTools()
-    const isBezierSelected = useIsToolSelected(tools['bezier'])
+    const tools = useTools();
+    const isBezierSelected = useIsToolSelected(tools["bezier"]);
     return (
       <DefaultToolbar {...props}>
-        <TldrawUiMenuItem {...tools['select']} isSelected={useIsToolSelected(tools['select'])} />
-        <TldrawUiMenuItem {...tools['hand']} isSelected={useIsToolSelected(tools['hand'])} />
-        <TldrawUiMenuItem {...tools['draw']} isSelected={useIsToolSelected(tools['draw'])} />
-        <TldrawUiMenuItem {...tools['eraser']} isSelected={useIsToolSelected(tools['eraser'])} />
-        <TldrawUiMenuItem {...tools['bezier']} isSelected={isBezierSelected} />
+        <TldrawUiMenuItem
+          {...tools["select"]}
+          isSelected={useIsToolSelected(tools["select"])}
+        />
+        <TldrawUiMenuItem
+          {...tools["hand"]}
+          isSelected={useIsToolSelected(tools["hand"])}
+        />
+        <TldrawUiMenuItem
+          {...tools["draw"]}
+          isSelected={useIsToolSelected(tools["draw"])}
+        />
+        <TldrawUiMenuItem
+          {...tools["eraser"]}
+          isSelected={useIsToolSelected(tools["eraser"])}
+        />
+        <TldrawUiMenuItem {...tools["bezier"]} isSelected={isBezierSelected} />
         {/* ... all other default tools hardcoded ... */}
       </DefaultToolbar>
-    )
+    );
   },
-}
+};
 ```
 
-**Why we did this:**
+**Why I did this:**
 
 - Need to add the bezier tool to the toolbar UI
 - No apparent API to inject a single tool into the default toolbar
@@ -81,7 +93,7 @@ const components: TLComponents = {
 - Fragile: breaks if tldraw adds/removes/reorders default tools
 - Every custom tool would need to duplicate this entire menu structure
 
-**What we need:**
+**What I need:**
 
 - Composable toolbar API that allows inserting tools at specific positions
 - Pattern like: `DefaultToolbar.insertBefore('arrow', tools['bezier'])`
@@ -115,7 +127,7 @@ export interface BezierShapeProps {
 }
 ```
 
-**Why we did this:**
+**Why I did this:**
 
 - Bezier shapes need an "edit mode" where users can select/move/add/delete points
 - Storing in props makes state automatically persist through undo/redo
@@ -128,7 +140,7 @@ export interface BezierShapeProps {
 - Appears in undo/redo history (is this desirable?)
 - Multiple shapes could theoretically be in edit mode simultaneously (though we prevent this)
 
-**Alternatives we considered:**
+**Alternatives I considered:**
 
 1. **Separate editing tool**: Create a "bezier-editing" tool that manages selection state
 
@@ -144,7 +156,7 @@ export interface BezierShapeProps {
    - Pros: Best of both worlds potentially
    - Cons: Split brain - harder to reason about
 
-**Question:** Which pattern do you recommend? Are there examples of other shapes with similar multi-point editing needs we should follow?
+**Question:** Which pattern do you recommend? Are there examples of other shapes with similar multi-point editing needs developers should follow?
 
 **Similar shapes in tldraw:**
 
@@ -171,7 +183,7 @@ setTimeout(() => {
 }, 50); // or 10ms depending on context
 ```
 
-**Why we did this:**
+**Why I did this:**
 
 - When closing a bezier curve, the shape's geometry changes significantly
 - Transform controls don't automatically update to match the new closed path bounds
@@ -185,7 +197,7 @@ setTimeout(() => {
 - Causes brief visual flicker of selection handles
 - Different timeout values suggest guesswork rather than proper integration
 
-**What we need:**
+**What you need:**
 
 - Proper way to signal that a shape's bounds have changed and transform controls need to refresh
 - Is there a lifecycle hook after shape modification?
@@ -213,7 +225,7 @@ private lastClickCount = 0
 private readonly DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
 ```
 
-**Why we did this:**
+**Why I did this:**
 
 - Need to detect double-clicks on anchor points to toggle smooth/corner type
 - Also need to detect double-clicks on segments to add new points
@@ -227,7 +239,7 @@ private readonly DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
 - Manual timing thresholds (300ms) may not match platform conventions
 - Instance state may not be reliable
 
-**Alternatives we considered:**
+**Alternatives I considered:**
 
 1. Store last click in `editor.getInstanceState().meta`
 2. Move to tool state instead of ShapeUtil
@@ -252,23 +264,35 @@ private readonly DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
 ```typescript
 const components: TLComponents = {
   Toolbar: (props) => {
-    const tools = useTools()
-    const isBezierSelected = useIsToolSelected(tools['bezier'])
+    const tools = useTools();
+    const isBezierSelected = useIsToolSelected(tools["bezier"]);
     return (
       <DefaultToolbar {...props}>
-        <TldrawUiMenuItem {...tools['select']} isSelected={useIsToolSelected(tools['select'])} />
-        <TldrawUiMenuItem {...tools['hand']} isSelected={useIsToolSelected(tools['hand'])} />
-        <TldrawUiMenuItem {...tools['draw']} isSelected={useIsToolSelected(tools['draw'])} />
-        <TldrawUiMenuItem {...tools['eraser']} isSelected={useIsToolSelected(tools['eraser'])} />
-        <TldrawUiMenuItem {...tools['bezier']} isSelected={isBezierSelected} />
+        <TldrawUiMenuItem
+          {...tools["select"]}
+          isSelected={useIsToolSelected(tools["select"])}
+        />
+        <TldrawUiMenuItem
+          {...tools["hand"]}
+          isSelected={useIsToolSelected(tools["hand"])}
+        />
+        <TldrawUiMenuItem
+          {...tools["draw"]}
+          isSelected={useIsToolSelected(tools["draw"])}
+        />
+        <TldrawUiMenuItem
+          {...tools["eraser"]}
+          isSelected={useIsToolSelected(tools["eraser"])}
+        />
+        <TldrawUiMenuItem {...tools["bezier"]} isSelected={isBezierSelected} />
         {/* ... all other default tools hardcoded ... */}
       </DefaultToolbar>
-    )
+    );
   },
-}
+};
 ```
 
-**Why we did this:**
+**Why I did this:**
 
 - Need to add the bezier tool to the toolbar UI
 - No apparent API to inject a single tool into the default toolbar
@@ -282,7 +306,7 @@ const components: TLComponents = {
 - Fragile: breaks if tldraw adds/removes/reorders default tools
 - Every custom tool would need to duplicate this entire menu structure
 
-**What we need:**
+**What to consider:**
 
 - Composable toolbar API that allows inserting tools at specific positions
 - Pattern like: `DefaultToolbar.insertBefore('arrow', tools['bezier'])`
@@ -390,21 +414,21 @@ const components: TLComponents = {
 
 ### Design Decisions
 
-**Why we chose `bezier-js` library:**
+**Why I chose `bezier-js` library:**
 
 - Industry-standard bezier curve mathematics
 - Handles cubic, quadratic, and linear segments uniformly
 - Accurate projection and splitting algorithms
 - Same approach tldraw uses for its own geometry
 
-**Why we chose DOM-level event capture:**
+**Why I chose DOM-level event capture:**
 
 - tldraw's handle system intercepts pointer events on anchor points
 - Using DOM capture phase lets us intercept events BEFORE handle system
 - Enables double-click detection and segment interactions
 - Clean separation from tldraw's event system
 
-**Why we chose service-oriented architecture:**
+**Why I chose service-oriented architecture:**
 
 - Makes code testable (pure functions)
 - Easy to understand and maintain
@@ -428,7 +452,7 @@ const components: TLComponents = {
 
 ## 🔮 Future Enhancement Ideas
 
-These are features we've considered for future development, pending architectural validation and community feedback:
+These are features to consider for future development, pending architectural validation and community feedback:
 
 ### UX Improvements
 
@@ -475,8 +499,6 @@ These are features we've considered for future development, pending architectura
 - **Question:** Is this something tldraw would want in core, or better as a plugin/extension?
 
 ---
-
-## 📞 Contact & Questions
 
 **How to test:**
 
