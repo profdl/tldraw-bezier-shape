@@ -18,14 +18,28 @@ type SegmentDragState = {
 type ClickTargetType = 'anchor' | 'segment' | 'control' | 'canvas' | 'none'
 
 /**
- * Component to handle edit mode interactions using DOM-level event capture.
+ * Component to handle ALL edit mode interactions using DOM-level event capture.
  *
- * This is necessary because tldraw's handle system intercepts pointer events
- * on anchor points (which are rendered as handles), preventing the shape's
- * onPointerDown and onDoubleClick handlers from receiving those events.
+ * This is the authoritative interaction handler for bezier shapes in edit mode.
+ * It intercepts events BEFORE tldraw's systems process them using capture: true,
+ * which is necessary to:
+ * - Handle clicks on anchor points (rendered as tldraw handles)
+ * - Implement custom double-click detection (300ms threshold, 8px distance)
+ * - Prevent tldraw's default behaviors (e.g., text tool on double-click)
  *
- * By using DOM event listeners with capture: true, we can intercept events
- * BEFORE tldraw's handle system processes them.
+ * **Interactions handled:**
+ * - Single click: Select anchor points (with shift-to-multi-select)
+ * - Double click anchor: Toggle smooth/corner point type
+ * - Double click segment: Add new point at position
+ * - Click & drag segment: Reshape curve segment
+ * - Delete/Backspace: Remove selected points
+ * - Escape/Enter: Exit edit mode
+ * - Click outside shape: Exit edit mode
+ *
+ * **Architecture note:**
+ * The Editing state (toolStates/Editing.ts) only handles lifecycle (enter/exit)
+ * and keyboard shortcuts. All pointer interactions happen here to avoid duplication
+ * and race conditions.
  */
 export function BezierEditModeHandler() {
   const editor = useEditor()
@@ -95,13 +109,22 @@ export function BezierEditModeHandler() {
     const container = editor.getContainer()
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Delete' && event.key !== 'Backspace') {
+      const editingShape = getEditingShape()
+      if (!editingShape) {
         return
       }
 
-      const editingShape = getEditingShape()
+      // Handle Escape/Enter to exit edit mode
+      if (event.key === 'Escape' || event.key === 'Enter') {
+        event.preventDefault()
+        event.stopPropagation()
+        bezierLog('EditMode', 'Keyboard exit via', event.key)
+        BezierStateActions.exitEditMode(editor, editingShape, { deselect: false })
+        return
+      }
 
-      if (!editingShape) {
+      // Handle Delete/Backspace to remove selected points
+      if (event.key !== 'Delete' && event.key !== 'Backspace') {
         return
       }
 

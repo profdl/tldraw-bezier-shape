@@ -39,36 +39,6 @@ export class BezierShapeUtil extends BaseBoxShapeUtil<BezierShape> {
   static override props = bezierShapeProps
   static override migrations = bezierShapeMigrations
 
-  /**
-   * TODO: [tldraw-handoff] Double-click detection approach - review with tldraw team
-   *
-   * Current implementation: Manual double-click tracking using instance state
-   *
-   * **Why this exists:**
-   * - Need to detect double-clicks on anchor points to toggle smooth/corner type
-   * - tldraw's onDoubleClick handler fires for the shape, but doesn't identify which anchor
-   * - Handle system doesn't provide double-click events on individual handles
-   *
-   * **Concerns:**
-   * - ShapeUtil instances may be recreated, causing click state loss
-   * - Duplicates functionality that might exist in tldraw's event system
-   * - Manual timing thresholds (300ms) may not match platform conventions
-   *
-   * **Question for tldraw team:**
-   * Is there a native way to detect double-clicks on specific handles, or should we
-   * move this tracking to editor state/tool state instead of ShapeUtil instance state?
-   *
-   * **Alternative approaches to consider:**
-   * 1. Store last click in editor.getInstanceState().meta
-   * 2. Move to tool state instead of ShapeUtil
-   * 3. Use a global WeakMap keyed by shape ID
-   *
-   * @see {@link https://github.com/tldraw/tldraw Relevant tldraw documentation}
-   */
-  private lastClickTime = 0
-  private lastClickedHandleId: string | null = null
-  private lastClickCount = 0
-  private readonly DOUBLE_CLICK_THRESHOLD = 300 // milliseconds
 
   override getDefaultProps(): BezierShape['props'] {
     return getDefaultBezierProps(this.editor)
@@ -269,155 +239,18 @@ export class BezierShapeUtil extends BaseBoxShapeUtil<BezierShape> {
     return BezierBounds.recalculateShapeBounds(shape, newPoints)
   }
 
-  // Pointer down handler for edit mode interactions
-  onPointerDown = (shape: BezierShape) => {
-    bezierLog('Interaction', 'onPointerDown called', {
-      shapeId: shape.id,
-      editMode: shape.props.editMode,
-      currentTool: this.editor.getCurrentToolId()
-    })
+  /**
+   * NOTE: Edit mode interactions (pointer, double-click) are handled by BezierEditModeHandler
+   * using DOM-level event capture. This is necessary to intercept events before tldraw's
+   * handle system processes them. The onDoubleClick handler below only handles entering
+   * edit mode (when editMode is false).
+   */
 
-    if (!shape.props.editMode) {
-      bezierLog('Interaction', 'onPointerDown: Not in edit mode')
-      return
-    }
-
-    bezierLog('Interaction', 'onPointerDown: In edit mode, handling interactions')
-
-    const pagePoint = this.editor.inputs.currentPagePoint.clone()
-    const shapePageBounds = this.editor.getShapePageBounds(shape.id)
-    if (!shapePageBounds) return
-
-    const localPoint = {
-      x: pagePoint.x - shapePageBounds.x,
-      y: pagePoint.y - shapePageBounds.y
-    }
-
-    const zoom = this.editor.getZoomLevel()
-
-    // Check for anchor point selection
-    const anchorIndex = BezierState.getAnchorPointAt(shape.props.points, localPoint, zoom)
-    bezierLog('Interaction', 'onPointerDown: anchorIndex =', anchorIndex)
-    if (anchorIndex !== -1) {
-      // Detect double-click on anchor point
-      const now = Date.now()
-      const handleId = `anchor-${anchorIndex}`
-      const withinThreshold = now - this.lastClickTime < this.DOUBLE_CLICK_THRESHOLD
-      const sameHandle = this.lastClickedHandleId === handleId
-      const clickCount = withinThreshold && sameHandle ? this.lastClickCount + 1 : 1
-      const isDoubleClick = clickCount === 2
-
-      this.lastClickTime = now
-      this.lastClickedHandleId = handleId
-      this.lastClickCount = isDoubleClick ? 0 : clickCount
-
-      if (isDoubleClick) {
-        bezierLog('Interaction', 'DOUBLE-CLICK detected on anchor', anchorIndex)
-        BezierStateActions.togglePointType(this.editor, shape, anchorIndex)
-        return
-      }
-
-      bezierLog('Interaction', 'Selecting anchor', anchorIndex, 'shiftKey:', this.editor.inputs.shiftKey)
-      BezierStateActions.handlePointSelection(this.editor, shape, anchorIndex, this.editor.inputs.shiftKey)
-      return
-    }
-
-    // Check for control point (let handle system manage it)
-    const controlInfo = BezierState.getControlPointAt(shape.props.points, localPoint, zoom)
-    bezierLog('Interaction', 'onPointerDown: controlInfo =', controlInfo)
-    if (controlInfo) {
-      bezierLog('Interaction', 'Control point detected, letting handle system manage it')
-      return
-    }
-
-    // Check for segment selection
-    const canSelectSegments = this.editor.getCurrentToolId() === 'select'
-    const segmentInfo = BezierState.getSegmentAtPosition(shape.props.points, localPoint, zoom, shape.props.isClosed)
-    bezierLog('Interaction', 'onPointerDown: segmentInfo =', segmentInfo, 'canSelectSegments =', canSelectSegments)
-    if (segmentInfo && canSelectSegments) {
-      bezierLog('Interaction', 'Selecting segment', segmentInfo.segmentIndex)
-      BezierStateActions.selectSegment(this.editor, shape, segmentInfo.segmentIndex)
-      return
-    }
-
-    // Clicked inside shape but not on any interactive element - clear selections
-    bezierLog('Interaction', 'Clearing selections')
-    BezierStateActions.clearPointSelection(this.editor, shape)
-    BezierStateActions.clearSegmentSelection(this.editor, shape)
-
-    // Reset double-click tracking if clicking elsewhere
-    this.lastClickedHandleId = null
-    this.lastClickCount = 0
-  }
-
-  // Double-click handler for both entering edit mode and edit mode interactions
-  override onDoubleClickEdge = (shape: BezierShape) => {
-    bezierLog('Interaction', 'onDoubleClickEdge called', {
-      shapeId: shape.id,
-      editMode: shape.props.editMode,
-    })
-
-    // When in edit mode, prevent default text tool behavior
-    if (shape.props.editMode) {
-      bezierLog('Interaction', 'onDoubleClickEdge: Preventing default, staying in edit mode')
-      return
-    }
-  }
-
-  // Double-click handler for both entering edit mode and edit mode interactions
+  // Double-click handler for entering edit mode
   override onDoubleClick = (shape: BezierShape) => {
-    bezierLog('Interaction', 'onDoubleClick called', {
-      shapeId: shape.id,
-      editMode: shape.props.editMode,
-      currentTool: this.editor.getCurrentToolId()
-    })
-
-    // If already in edit mode, handle point type toggling and segment point addition
+    // If already in edit mode, interactions are handled by BezierEditModeHandler
     if (shape.props.editMode) {
-      bezierLog('Interaction', 'In edit mode, checking for point interactions')
-
-      const pagePoint = this.editor.inputs.currentPagePoint.clone()
-      const shapePageBounds = this.editor.getShapePageBounds(shape.id)
-      if (!shapePageBounds) {
-        bezierLog('Interaction', 'No shape bounds, preventing default')
-        // Prevent text tool activation
-        return
-      }
-
-      const localPoint = {
-        x: pagePoint.x - shapePageBounds.x,
-        y: pagePoint.y - shapePageBounds.y
-      }
-
-      const zoom = this.editor.getZoomLevel()
-
-      bezierLog('Interaction', 'localPoint =', localPoint, 'zoom =', zoom)
-
-      // Check if double-clicking on an anchor point to toggle its type
-      const anchorIndex = BezierState.getAnchorPointAt(shape.props.points, localPoint, zoom)
-      bezierLog('Interaction', 'anchorIndex from getAnchorPointAt =', anchorIndex)
-      if (anchorIndex !== -1) {
-        bezierLog('Interaction', 'Toggling point type for anchor', anchorIndex)
-        BezierStateActions.togglePointType(this.editor, shape, anchorIndex)
-        // Prevent text tool activation
-        return
-      }
-
-      // Check if double-clicking on a segment to add a point
-      const segmentInfo = BezierState.getSegmentAtPosition(shape.props.points, localPoint, zoom, shape.props.isClosed)
-      bezierLog('Interaction', 'segmentInfo =', segmentInfo)
-      if (segmentInfo) {
-        bezierLog('Interaction', 'Adding point to segment', segmentInfo.segmentIndex)
-        const updatedShape = BezierState.addPointToSegment(shape, segmentInfo.segmentIndex, segmentInfo.t)
-        const finalShape = BezierBounds.recalculateShapeBounds(updatedShape, updatedShape.props.points)
-        this.editor.updateShape(finalShape)
-        bezierLog('PointAdd', 'New point added at segment', segmentInfo.segmentIndex, 'using double click')
-        // Prevent text tool activation
-        return
-      }
-
-      bezierLog('Interaction', 'No anchor or segment hit, preventing default')
-      // Even if we didn't hit anything specific, prevent text tool activation in edit mode
+      bezierLog('Interaction', 'In edit mode, preventing default text tool behavior')
       return
     }
 
